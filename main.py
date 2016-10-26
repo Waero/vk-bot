@@ -122,13 +122,31 @@ class UserFields:
         tk.Label(Sbody,  text='Login').grid(row=4, column=1, sticky='w')
         tk.Label(Sbody, text='Password').grid(row=4, column=2, sticky='w')
         tk.Label(Sbody, text='Send Request').grid(row=4, column=3, sticky='w')
+        tk.Label(Sbody, text='Work?').grid(row=4, column=4, sticky='w')
+
         # Тут формуємо таблицю з усіх юзерів що є у базі
         for i in cur.execute("SELECT * FROM users;"):
             tk.Label(Sbody, text=str(i[0])).grid(row=self.id, column=0, sticky='w')
             tk.Label(Sbody, text=str(i[1])).grid(row=self.id, column=1, sticky='w')
             tk.Label(Sbody, text=str(i[2])).grid(row=self.id, column=2, sticky='w')
             tk.Label(Sbody, text=str(i[3])).grid(row=self.id, column=3, sticky='w')
+            if i[5] == 1:
+                text = 'On'
+            else:
+                text = 'Off'
+            but = tk.Button(Sbody, text=text)
+            but.grid(row=self.id, column=4, sticky='w')
+            but.bind("<Button-1>", lambda event, uid=str(i[0]), but=but: self.change(event, uid, but))
             self.id = self.id+1
+
+    def change(self, event, uid, but):
+        if but.config('text')[-1] == 'On':
+            database.updateUserStart(uid, 0)
+            but.config(text='Off')
+        else:
+            database.updateUserStart(uid, 1)
+            but.config(text='On')
+
 
 
 # Метод для кнопки Edit і Save для рандомного часу
@@ -156,7 +174,6 @@ class UserFields:
 
 # Метод додавання нового юзера в базу
     def add_user(self, event):
-        print "user_added"
         con = db.connect(database="vkbot")
         cur = con.cursor()
 
@@ -181,6 +198,9 @@ class UserFields:
             tk.Label(Sbody, text=str(i[1])).grid(row=self.id, column=1, sticky='w')
             tk.Label(Sbody, text=str(i[2])).grid(row=self.id, column=2, sticky='w')
             tk.Label(Sbody, text=str(i[3])).grid(row=self.id, column=3, sticky='w')
+            but = tk.Button(Sbody, text='On')
+            but.grid(row=self.id, column=4, sticky='w')
+            but.bind("<Button-1>", lambda event, uid=str(i[0]), but=but: self.change(event, uid, but))
             self.id = self.id+1
         con.close()
 

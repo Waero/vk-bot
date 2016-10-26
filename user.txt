@@ -1,19 +1,2 @@
 login: 79869937767  password: superuser
 login: 79869937727  password: iama12345
-
-
-Exception in thread Thread-1:
-Traceback (most recent call last):
-  File "/usr/lib/python2.7/threading.py", line 810, in __bootstrap_inner
-    self.run()
-  File "/usr/lib/python2.7/threading.py", line 763, in run
-    self.__target(*self.__args, **self.__kwargs)
-  File "/home/yura/PycharmProjects/vk-bot/worker.py", line 66, in worker
-    mutal = getMutalFriends(session=user_friends[1], id=no_friendID)
-  File "/home/yura/PycharmProjects/vk-bot/vkapi.py", line 34, in getMutalFriends
-    mutal_friends = vkapi.friends.getMutual(target_uid=id)
-  File "/usr/local/lib/python2.7/dist-packages/vk/api.py", line 173, in __call__
-    return self._api._session.make_request(self)
-  File "/usr/local/lib/python2.7/dist-packages/vk/api.py", line 102, in make_request
-    raise error
-VkAPIError: 15. Access denied: user deactivated. request_params = {u'oauth': u'1', u'target_uid': u'366811166', u'method': u'friends.getMutual'}

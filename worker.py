@@ -4,6 +4,8 @@
 import threading
 import time
 import random
+
+import database
 from vkapi import *
 import sqlite3 as db
 from ConfigParser import SafeConfigParser
@@ -74,22 +76,25 @@ def worker(user, textfield):
                                                                                                                no_friendID,
                                                                                                                sleep4))
             time.sleep(sleep4)
-            # Якщо сторінка удалена то вк вертає ерор треба його обробити. (ерор в user.txt)
-            mutal = getMutalFriends(session=user_friends[1], id=no_friendID)
-            if mutal.__len__() >= 3:
-                addToFriend(session=user_friends[1], id=no_friendID)
-                textfield.insert('end',
-                                 'Юзер № {} відправив заявку в друзі юзеру з id= {}. Він чекає {} секунд \n'.format(
-                                     user[0],
-                                     no_friendID,
-                                     sleep))
-                sendRequestCount(user[0])  # Додаємо в каунтер +1
-                time.sleep(sleep)
-            else:
-                textfield.insert('end', 'Юзер № {} не знайшов 3 спільних друзів з id= {}. Він чекає {} секунд \n'.format(user[0],
-                                                                                                                         no_friendID,
-                                                                                                                         sleep3))
-                time.sleep(sleep3)
+            # Якщо сторінка удалена то вк вертає ерор. Тут його ловимо і виводимо
+            try:
+                mutal = getMutalFriends(session=user_friends[1], id=no_friendID)
+                if mutal.__len__() >= 3:
+                    addToFriend(session=user_friends[1], id=no_friendID)
+                    textfield.insert('end',
+                                     'Юзер № {} відправив заявку в друзі юзеру з id= {}. Він чекає {} секунд \n'.format(
+                                         user[0],
+                                         no_friendID,
+                                         sleep))
+                    database.sendRequestCount(user[0])  # Додаємо в каунтер +1
+                    time.sleep(sleep)
+                else:
+                    textfield.insert('end', 'Юзер № {} не знайшов 3 спільних друзів з id= {}. Він чекає {} секунд \n'.format(user[0],
+                                                                                                                             no_friendID,
+                                                                                                                             sleep3))
+                    time.sleep(sleep3)
+            except Exception as e:
+                textfield.insert('end', 'Юзер № {} не знайшов спільних друзів, причина : {} \n'.format(user[0], e.message))
 
 
 # Заносимо в базу Максимальну к-сть заявок друзів які можна кинути
@@ -103,23 +108,11 @@ def maxRequestSend(ID):
     con.close()
 
 
-# Заносимо в базу +1 до к-сть заявок в друзі які акаунт відправив
-def sendRequestCount(ID):
-    con = db.connect(database="vkbot")
-    cur = con.cursor()
-    current = cur.execute('''SELECT send_request FROM users WHERE id=?''', (ID,))
-    query = "UPDATE users set send_request=? where id=?"
-    for d in current:
-        cur.execute(query, (d[0]+1, ID))
-        con.commit()
-    con.close()
-
-
 # Метод створює паралельні процеси. Для кожного юзера свій процес
 def goWork(textfield):
     con = db.connect(database="vkbot")
     cur = con.cursor()
-    for i in cur.execute("SELECT * FROM users;"):
+    for i in cur.execute("SELECT * FROM users WHERE start_work=1;"):
         t = threading.Thread(target=worker, args=(i,textfield))
         t.start()
 
