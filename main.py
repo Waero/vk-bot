@@ -7,6 +7,7 @@ import os
 import worker
 import sqlite3 as db
 import database
+from ConfigParser import SafeConfigParser
 
 
 root = tk.Tk()
@@ -18,13 +19,12 @@ menu = tk.Frame(root, width=700, height=27)
 body = tk.Frame(root, width=700, height=300)
 bottom = tk.Frame(root, width=700, height=150)
 Sbody = tk.Frame(root, width=700, height=300)
-
     #создаем виджет text для логіровання на main скріні
 
-textfield = tk.Text(body, height=20,width=100,)
+textfield = tk.Text(body, height=20,width=100)
 textfield.pack()
 
-# Кнопки в меню
+# Кнопки в меню (різні скріни при кліку)
 class MainWindowBtn:
     def __init__(self):
         #butfont = font.Font(family='Ubuntu', size=10)
@@ -87,15 +87,74 @@ class UserFields:
         self.passwordField.grid(row=1, column=1)
         self.but.grid(row=0, rowspan=2, column=2)
 
-#Виводимо список людей які є в базі за допомогою цикла
+# Виводимо час для рандому
+        tk.Label(Sbody, text='Random Time in seconds').grid(row=0, column=4, columnspan=3)
+        tk.Label(Sbody, text=' min : ').grid(row=1, column=3)
+        self.min_time = tk.Entry(Sbody, width=10)
+        self.min_time.grid(row=1, column=4)
+        tk.Label(Sbody, text=' max : ').grid(row=1, column=5)
+        self.max_time = tk.Entry(Sbody, width=10)
+        self.max_time.grid(row=1, column=6)
+        self.edit_btn = tk.Button(Sbody,
+                             text="Edit",
+                             width=7, height=2,
+                             bg="green", fg="white")
+        self.edit_btn.bind("<Button-1>", self.edit_time)
+        self.edit_btn.grid(row=0, rowspan=2, column=7)
+        # Заповнюємо min і max значеннями з конфіг файла
+        config = SafeConfigParser()
+        config.read('config.ini')
+        max = config.get('main', 'max')
+        min = config.get('main', 'min')
+        self.min_time.insert(0, min)
+        self.max_time.insert(0, max)
+        self.min_time.config(state='disabled')
+        self.max_time.config(state='disabled')
+
+
+# Виводимо список людей які є в базі за допомогою цикла
         con = db.connect(database="vkbot")
         cur = con.cursor()
-        id = 3
+        self.id = 5
+        # Тут шапка
+        tk.Label(Sbody, text='  ').grid(row=3, column=0, sticky='w')
+        tk.Label(Sbody, text='ID').grid(row=4, column=0, sticky='w')
+        tk.Label(Sbody,  text='Login').grid(row=4, column=1, sticky='w')
+        tk.Label(Sbody, text='Password').grid(row=4, column=2, sticky='w')
+        tk.Label(Sbody, text='Send Request').grid(row=4, column=3, sticky='w')
+        # Тут формуємо таблицю з усіх юзерів що є у базі
         for i in cur.execute("SELECT * FROM users;"):
-            tk.Label(Sbody, text=str(i[0]) + ' ' + i[1] + ' ' + i[2]).grid(row=id, column=0, columnspan=3, sticky='w')
-            id = id+1
+            tk.Label(Sbody, text=str(i[0])).grid(row=self.id, column=0, sticky='w')
+            tk.Label(Sbody, text=str(i[1])).grid(row=self.id, column=1, sticky='w')
+            tk.Label(Sbody, text=str(i[2])).grid(row=self.id, column=2, sticky='w')
+            tk.Label(Sbody, text=str(i[3])).grid(row=self.id, column=3, sticky='w')
+            self.id = self.id+1
 
-#Додаємо нового юзера в базу
+
+# Метод для кнопки Edit і Save для рандомного часу
+    def edit_time(self, event):
+        if self.edit_btn.config('text')[-1] == 'Edit':
+                self.min_time.config(state='normal')
+                self.max_time.config(state='normal')
+                self.edit_btn.config(text='Save')
+        else:
+            self.min_time.config(state='disabled')
+            self.max_time.config(state='disabled')
+            self.edit_btn.config(text='Edit')
+            # Зберігаємо в конфіг значення max i min
+            config = SafeConfigParser()
+            config.read('config.ini')
+            #config.add_section('main')
+            config.set('main', 'max', self.max_time.get())
+            config.set('main', 'min', self.min_time.get())
+
+            with open('config.ini', 'w') as f:
+                config.write(f)
+
+
+
+
+# Метод додавання нового юзера в базу
     def add_user(self, event):
         print "user_added"
         con = db.connect(database="vkbot")
@@ -107,15 +166,23 @@ class UserFields:
         # This is the qmark style:
         cur.execute("insert into users (login,password) values (?, ?)", (login, password))
         con.commit()
-        con.close()
+        lastList = cur.execute("SELECT * FROM users ORDER BY id DESC LIMIT 1")
+
         # Виводимо алерт що юзера додано в базу
         tkMessageBox.showinfo(
             "Updated",
             "User {} is added".format(login)
         )
-        # Очищаємо поле для ввода логіна і пароля
+        # Очищаємо поле для ввода логіна і пароля і додаємо останнього юзера на екран
         self.loginField.delete("0", "end")
         self.passwordField.delete("0", "end")
+        for i in lastList:
+            tk.Label(Sbody, text=str(i[0])).grid(row=self.id, column=0, sticky='w')
+            tk.Label(Sbody, text=str(i[1])).grid(row=self.id, column=1, sticky='w')
+            tk.Label(Sbody, text=str(i[2])).grid(row=self.id, column=2, sticky='w')
+            tk.Label(Sbody, text=str(i[3])).grid(row=self.id, column=3, sticky='w')
+            self.id = self.id+1
+        con.close()
 
 
 if __name__ == "__main__":

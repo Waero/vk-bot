@@ -12,7 +12,9 @@ try:
          id INTEGER PRIMARY KEY AUTOINCREMENT,
           login VARCHAR,
           password VARCHAR,
-          friends INTEGER
+          send_request INTEGER DEFAULT 0,
+          max_request INTEGER,
+          start_work BOOLEAN DEFAULT TRUE
          );
 """)
 except db.DatabaseError, x:

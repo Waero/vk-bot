@@ -33,3 +33,10 @@ def getMutalFriends(session, id):
     vkapi = vk.API(session)
     mutal_friends = vkapi.friends.getMutual(target_uid=id)
     return mutal_friends
+
+
+# Метод відправляємо заявку в друзі (ID)
+def addToFriend(session, id):
+    vkapi = vk.API(session)
+    added_friend = vkapi.friends.add(user_id=id)
+    return added_friend
