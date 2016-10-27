@@ -79,11 +79,12 @@ class ButStart:
                             width=12, height=3,
                             bg="green", fg="white")
         self.but.bind("<Button-1>", self.startBot)
-        self.but.pack()
+        self.but.grid()
 
     def startBot(self, event):
         print "start"
         worker.goWork(textfield)
+        self.but.grid_forget()
 
 
 # Поля юзера в Settings
@@ -139,7 +140,7 @@ class UserFields:
         tk.Label(Sbody, text='ID').grid(row=4, column=0, sticky='w')
         tk.Label(Sbody,  text='Login').grid(row=4, column=1, sticky='w')
         tk.Label(Sbody, text='Password').grid(row=4, column=2, sticky='w')
-        tk.Label(Sbody, text='Send Request').grid(row=4, column=3, sticky='w')
+        #tk.Label(Sbody, text='Send Request').grid(row=4, column=3, sticky='w')
         tk.Label(Sbody, text='Work?').grid(row=4, column=4, sticky='w')
 
         # Тут формуємо таблицю з усіх юзерів що є у базі
@@ -147,7 +148,7 @@ class UserFields:
             tk.Label(Sbody, text=str(i[0])).grid(row=self.id, column=0, sticky='w')
             tk.Label(Sbody, text=str(i[1])).grid(row=self.id, column=1, sticky='w')
             tk.Label(Sbody, text=str(i[2])).grid(row=self.id, column=2, sticky='w')
-            tk.Label(Sbody, text=str(i[3])).grid(row=self.id, column=3, sticky='w')
+            #tk.Label(Sbody, text=str(i[3])).grid(row=self.id, column=3, sticky='w')
             if i[5] == 1:
                 text = 'On'
             else:
@@ -216,7 +217,7 @@ class UserFields:
             tk.Label(Sbody, text=str(i[0])).grid(row=self.id, column=0, sticky='w')
             tk.Label(Sbody, text=str(i[1])).grid(row=self.id, column=1, sticky='w')
             tk.Label(Sbody, text=str(i[2])).grid(row=self.id, column=2, sticky='w')
-            tk.Label(Sbody, text=str(i[3])).grid(row=self.id, column=3, sticky='w')
+            #tk.Label(Sbody, text=str(i[3])).grid(row=self.id, column=3, sticky='w')
             but = tk.Button(Sbody, text='On')
             but.grid(row=self.id, column=4, sticky='w')
             but.bind("<Button-1>", lambda event, uid=str(i[0]), but=but: self.change(event, uid, but))
