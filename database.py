@@ -14,7 +14,8 @@ try:
             password VARCHAR,
             send_request INTEGER DEFAULT 0,
             max_request INTEGER,
-            start_work BOOLEAN DEFAULT 1
+            start_work BOOLEAN DEFAULT 1,
+            vk_id INTEGER
             );
     """)
 except db.DatabaseError, x:
@@ -32,6 +33,14 @@ def updateUserStart(uid, work):
     con.commit()
     con.close()
 
+# Метод який оновлює вк ІД юзера в базі
+def updateVkId(uid, vkID):
+    con = db.connect(database="vkbot")
+    cur = con.cursor()
+    query = "UPDATE users set vk_id=? where ID=?"
+    cur.execute(query, (vkID, uid,))
+    con.commit()
+    con.close()
 
 # Заносимо в базу +1 до к-сть заявок в друзі які акаунт відправив
 def sendRequestCount(ID):

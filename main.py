@@ -4,11 +4,17 @@ import tkMessageBox
 import Tkinter as tk
 import platform
 import os
+
+import vkapi
 import worker
 import sqlite3 as db
 import database
 from ConfigParser import SafeConfigParser
 
+
+def onFrameConfigure(canvas):
+    '''Reset the scroll region to encompass the inner frame'''
+    canvas.configure(scrollregion=canvas.bbox("all"))
 
 root = tk.Tk()
 root.title('vk-bot')
@@ -19,8 +25,19 @@ menu = tk.Frame(root, width=700, height=27)
 body = tk.Frame(root, width=700, height=300)
 bottom = tk.Frame(root, width=700, height=150)
 Sbody = tk.Frame(root, width=700, height=300)
-    #создаем виджет text для логіровання на main скріні
 
+#canvas = tk.Canvas(Sbody, borderwidth=0, background="#ffffff")
+#frame = tk.Frame(canvas, background="#ffffff")
+#vsb = tk.Scrollbar(Sbody, orient="vertical", command=canvas.yview)
+#canvas.configure(yscrollcommand=vsb.set)
+
+#vsb.grid()
+#canvas.grid(row=10, column=0, columnspan=5)
+#canvas.create_window((5,5), window=frame, anchor="nw")
+
+#frame.bind("<Configure>", lambda event, canvas=canvas: onFrameConfigure(canvas))
+
+    #создаем виджет text для логіровання на main скріні
 textfield = tk.Text(body, height=20,width=100)
 textfield.pack()
 
@@ -116,6 +133,7 @@ class UserFields:
         con = db.connect(database="vkbot")
         cur = con.cursor()
         self.id = 5
+
         # Тут шапка
         tk.Label(Sbody, text='  ').grid(row=3, column=0, sticky='w')
         tk.Label(Sbody, text='ID').grid(row=4, column=0, sticky='w')
@@ -138,6 +156,9 @@ class UserFields:
             but.grid(row=self.id, column=4, sticky='w')
             but.bind("<Button-1>", lambda event, uid=str(i[0]), but=but: self.change(event, uid, but))
             self.id = self.id+1
+
+
+
 
     def change(self, event, uid, but):
         if but.config('text')[-1] == 'On':
@@ -170,8 +191,6 @@ class UserFields:
                 config.write(f)
 
 
-
-
 # Метод додавання нового юзера в базу
     def add_user(self, event):
         con = db.connect(database="vkbot")
@@ -179,9 +198,9 @@ class UserFields:
 
         login = self.loginField.get()
         password = self.passwordField.get()
-
+        vk_id = vkapi.getVkId(login=login, password=password)
         # This is the qmark style:
-        cur.execute("insert into users (login,password) values (?, ?)", (login, password))
+        cur.execute("insert into users (login, password, vk_id) values (?, ?, ?)", (login, password, vk_id))
         con.commit()
         lastList = cur.execute("SELECT * FROM users ORDER BY id DESC LIMIT 1")
 
