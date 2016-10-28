@@ -12,9 +12,6 @@ import database
 from ConfigParser import SafeConfigParser
 
 
-def onFrameConfigure(canvas):
-    '''Reset the scroll region to encompass the inner frame'''
-    canvas.configure(scrollregion=canvas.bbox("all"))
 
 root = tk.Tk()
 root.title('vk-bot')
@@ -24,18 +21,25 @@ root.minsize(width=700, height=500)
 menu = tk.Frame(root, width=700, height=27)
 body = tk.Frame(root, width=700, height=300)
 bottom = tk.Frame(root, width=700, height=150)
-Sbody = tk.Frame(root, width=700, height=300)
+Sbody = tk.Frame(root,  width=700, height=300)
 
-#canvas = tk.Canvas(Sbody, borderwidth=0, background="#ffffff")
-#frame = tk.Frame(canvas, background="#ffffff")
-#vsb = tk.Scrollbar(Sbody, orient="vertical", command=canvas.yview)
-#canvas.configure(yscrollcommand=vsb.set)
+canvas=tk.Canvas(Sbody)
+listFrame=tk.Frame(canvas, width=700, height=380)
+scrollb=tk.Scrollbar(Sbody, orient="vertical", command=canvas.yview)
+scrollb.grid(row=8, rowspan=10, columnspan=100, sticky='nse')  #grid scrollbar in master, but
+canvas['yscrollcommand'] = scrollb.set   #attach scrollbar to frameTwo
 
-#vsb.grid()
-#canvas.grid(row=10, column=0, columnspan=5)
-#canvas.create_window((5,5), window=frame, anchor="nw")
 
-#frame.bind("<Configure>", lambda event, canvas=canvas: onFrameConfigure(canvas))
+def AuxscrollFunction(event):
+    # You need to set a max size for frameTwo. Otherwise, it will grow as needed, and scrollbar do not act
+    canvas.configure(scrollregion=canvas.bbox("all"), width=700, height=380)
+    #canvas.configure(scrollregion=canvas.bbox("all"))
+
+listFrame.bind("<Configure>", AuxscrollFunction)
+canvas.create_window((10,10),window=listFrame, anchor='w')
+
+#scrollb.grid_forget()                         # Forget scrollbar because the number of pieces remains undefined by the user. But this not destroy it. It will be "remembered" later.
+canvas.grid(row=8, rowspan=10, column=0, columnspan=100, sticky='w')
 
     #создаем виджет text для логіровання на main скріні
 textfield = tk.Text(body, height=20,width=100)
@@ -113,10 +117,11 @@ class UserFields:
         tk.Label(Sbody, text=' max : ').grid(row=1, column=5)
         self.max_time = tk.Entry(Sbody, width=10)
         self.max_time.grid(row=1, column=6)
+        #self.image = tk.PhotoImage(file="123.png")
         self.edit_btn = tk.Button(Sbody,
-                             text="Edit",
-                             width=7, height=2,
-                             bg="green", fg="white")
+                                  text='Edit',
+                                  width=7, height=2,
+                                  bg='green', fg="white")
         self.edit_btn.bind("<Button-1>", self.edit_time)
         self.edit_btn.grid(row=0, rowspan=2, column=7)
         # Заповнюємо min і max значеннями з конфіг файла
@@ -133,32 +138,31 @@ class UserFields:
 # Виводимо список людей які є в базі за допомогою цикла
         con = db.connect(database="vkbot")
         cur = con.cursor()
-        self.id = 5
+        self.id = 6
 
         # Тут шапка
-        tk.Label(Sbody, text='  ').grid(row=3, column=0, sticky='w')
-        tk.Label(Sbody, text='ID').grid(row=4, column=0, sticky='w')
-        tk.Label(Sbody,  text='Login').grid(row=4, column=1, sticky='w')
-        tk.Label(Sbody, text='Password').grid(row=4, column=2, sticky='w')
-        #tk.Label(Sbody, text='Send Request').grid(row=4, column=3, sticky='w')
-        tk.Label(Sbody, text='Work?').grid(row=4, column=4, sticky='w')
+        tk.Label(listFrame, text='  ').grid(row=3, column=0, sticky='w')
+        tk.Label(listFrame, text='ID').grid(row=4, column=0, padx=15, sticky='w')
+        tk.Label(listFrame,  text='Login').grid(row=4, column=1, padx=15, sticky='w')
+        tk.Label(listFrame, text='Password').grid(row=4, column=2, padx=15, sticky='w')
+        #tk.Label(listFrame, text='Send Request').grid(row=4, column=3, padx=15, sticky='w')
+        tk.Label(listFrame, text='Work?').grid(row=4, column=4, padx=15, sticky='w')
+        tk.Label(listFrame, text='  ').grid(row=5, column=0, sticky='w')
 
         # Тут формуємо таблицю з усіх юзерів що є у базі
         for i in cur.execute("SELECT * FROM users;"):
-            tk.Label(Sbody, text=str(i[0])).grid(row=self.id, column=0, sticky='w')
-            tk.Label(Sbody, text=str(i[1])).grid(row=self.id, column=1, sticky='w')
-            tk.Label(Sbody, text=str(i[2])).grid(row=self.id, column=2, sticky='w')
-            #tk.Label(Sbody, text=str(i[3])).grid(row=self.id, column=3, sticky='w')
+            tk.Label(listFrame, text=str(i[0])).grid(row=self.id, column=0, padx=15, sticky='w')
+            tk.Label(listFrame, text=str(i[1])).grid(row=self.id, column=1, padx=15, sticky='w')
+            tk.Label(listFrame, text=str(i[2])).grid(row=self.id, column=2, padx=15, sticky='w')
+            #tk.Label(listFrame, text=str(i[3])).grid(row=self.id, column=3, padx=15, sticky='w')
             if i[5] == 1:
                 text = 'On'
             else:
                 text = 'Off'
-            but = tk.Button(Sbody, text=text)
-            but.grid(row=self.id, column=4, sticky='w')
+            but = tk.Button(listFrame, text=text)
+            but.grid(row=self.id, column=4, padx=15, sticky='w')
             but.bind("<Button-1>", lambda event, uid=str(i[0]), but=but: self.change(event, uid, but))
             self.id = self.id+1
-
-
 
 
     def change(self, event, uid, but):
@@ -214,12 +218,12 @@ class UserFields:
         self.loginField.delete("0", "end")
         self.passwordField.delete("0", "end")
         for i in lastList:
-            tk.Label(Sbody, text=str(i[0])).grid(row=self.id, column=0, sticky='w')
-            tk.Label(Sbody, text=str(i[1])).grid(row=self.id, column=1, sticky='w')
-            tk.Label(Sbody, text=str(i[2])).grid(row=self.id, column=2, sticky='w')
-            #tk.Label(Sbody, text=str(i[3])).grid(row=self.id, column=3, sticky='w')
-            but = tk.Button(Sbody, text='On')
-            but.grid(row=self.id, column=4, sticky='w')
+            tk.Label(listFrame, text=str(i[0])).grid(row=self.id, column=0, padx=15, sticky='w')
+            tk.Label(listFrame, text=str(i[1])).grid(row=self.id, column=1, padx=15, sticky='w')
+            tk.Label(listFrame, text=str(i[2])).grid(row=self.id, column=2, padx=15, sticky='w')
+            #tk.Label(listFrame, text=str(i[3])).grid(row=self.id, column=3, padx=15, sticky='w')
+            but = tk.Button(listFrame, text='On')
+            but.grid(row=self.id, column=4, padx=15, sticky='w')
             but.bind("<Button-1>", lambda event, uid=str(i[0]), but=but: self.change(event, uid, but))
             self.id = self.id+1
         con.close()

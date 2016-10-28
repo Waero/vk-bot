@@ -55,8 +55,9 @@ def worker(user, textfield):
 
         #Знаходимо людей яких у нас ще нема в друзях
         mutal_friends = getMutalFriends(session=user_friends[1], id=uid)
-        no_friends_yet = friends_from_friend + mutal_friends
-        no_friends_yet = list(set(no_friends_yet))
+        sended_request = getRequests(session=user_friends[1])
+        no_friends_yet = set(friends_from_friend) ^ set(mutal_friends) ^ set(sended_request)
+        #no_friends_yet = list(set(no_friends_yet))
         textfield.insert('end', 'Юзер № {} знайшов {} не доданих друзів. Він чекає {} секунд \n'.format(user[0],
                                                                                                         len(no_friends_yet),
                                                                                                         sleep))
@@ -108,7 +109,7 @@ def worker(user, textfield):
                                                                                                                              sleep3))
                     time.sleep(sleep3)
             except Exception as e:
-                if e.message == 'Потрібно ввести капчу':
+                if e.message == u'Потрібно ввести капчу':
                     textfield.insert('end', 'Юзер № {} не додав в друзі, причина: {} \n'.format(user[0], e.message))
                     raise Exception
                 textfield.insert('end', 'Юзер № {} не додав в друзі, причина: {} \n'.format(user[0], e.message))

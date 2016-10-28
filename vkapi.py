@@ -52,3 +52,9 @@ def addToFriendCaptcha(session, id, captcha_sid, captcha_key):
     added_friend = vkApi.friends.add(user_id=id, captcha_sid=captcha_sid, captcha_key=captcha_key)
     return added_friend
 
+
+# Метод витягує кому вже відправлялись заявки
+def getRequests(session):
+    vkApi = vk.API(session)
+    sended_request = vkApi.friends.getRequests(out=1)
+    return sended_request
