@@ -13,6 +13,7 @@ def getFriendsAndSession(login, password):
     # session - Сесія юзера
     return uf, session
 
+
 def getVkId(login, password):
     session = vk.AuthSession(scope='friends, offline', app_id='5677795', user_login=login, user_password=password)
     vkApi = vk.API(session)
@@ -23,7 +24,7 @@ def getVkId(login, password):
 # Метод витягує профіль юзера по ID
 def getUser(session,id):
     vkApi = vk.API(session)
-    u = vkApi.users.get(user_ids=id)
+    u = vkApi.users.get(user_ids=id, fields='last_seen')
     return u
 
 
@@ -46,6 +47,7 @@ def addToFriend(session, id):
     vkApi = vk.API(session)
     added_friend = vkApi.friends.add(user_id=id)
     return added_friend
+
 
 def addToFriendCaptcha(session, id, captcha_sid, captcha_key):
     vkApi = vk.API(session)

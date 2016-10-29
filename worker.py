@@ -18,7 +18,7 @@ def worker(user, textfield):
     max = config.getint('main', 'max')
     min = config.getint('main', 'min')
     # При старті присвоюємо юзерам час очікування, щоб кожен стартанув у різний час
-    maxRequestSend(user[0])
+    database.maxRequestSend(user[0])
     sleep = random.randrange(min, max)
     textfield.insert('end', "Юзер № {} налаштований і чекає {} секунд \n".format(user[0], sleep))
     time.sleep(sleep)
@@ -53,7 +53,7 @@ def worker(user, textfield):
                                                                                                          sleep2))
         time.sleep(sleep2)
 
-        #Знаходимо людей яких у нас ще нема в друзях
+        #Знаходимо людей яких у нас ще нема в друзях і віднімаємо тих кому вже відправляли запрос
         mutal_friends = getMutalFriends(session=user_friends[1], id=uid)
         sended_request = getRequests(session=user_friends[1])
         no_friends_yet = set(friends_from_friend) ^ set(mutal_friends) ^ set(sended_request)
@@ -64,6 +64,13 @@ def worker(user, textfield):
         time.sleep(sleep)
         # Відкриваємо профіль юзера з людей яких у нас ще нема в друзях
         for no_friendID in no_friends_yet:
+            # Перевіряємо чи не перебільшений ліміт на день
+            send_and_max_request = database.sendRequest(user[0])
+            if send_and_max_request[1] == send_and_max_request[0]:
+                textfield.insert('end',
+                                 'Юзер № {} припинив роботу. Відправлено максимальну к-сь запитів на день \n'.format(user[0]))
+                raise Exception('Stop')
+            #if send_and_max_request
             open_user_profile = getUser(session=user_friends[1], id=no_friendID)
             textfield.insert('end', 'Юзер № {} відкрив профіль не друга id= {}. Він чекає {} секунд \n'.format(user[0],
                                                                                                                   no_friendID,
@@ -71,9 +78,11 @@ def worker(user, textfield):
             # textfield.insert('end', repr(open_friend_profile).decode("unicode_escape"))
             time.sleep(sleep2)
 
-
             # Якщо сторінка друга видалена то vk вертає error. Тут його ловимо і виводимо
             try:
+                # Перевіряємо чи користувач активний(тобто заходив у ВК протягом останніх 2х тижнів
+                if time.time() - open_user_profile[0]['last_seen']['time'] > 1210000:
+                    raise Exception('Користувач не заходив вже більше 2 тижнів')
                 # Перевіряємо чи є у нас більше трьох спільних юзерів, якщо є, то додаємо в друзі, якщо ні, то відкриваємо наступного
                 mutal = getMutalFriends(session=user_friends[1], id=no_friendID)
                 sleep4 = random.randrange(min, max)
@@ -97,9 +106,10 @@ def worker(user, textfield):
                                                      sleep))
                             database.sendRequestCount(user[0])  # Додаємо в каунтер +1
                             time.sleep(sleep)
+
                         except Exception as e:
                             # ifCaptcha(e=e, session=user_friends[1], id=no_friendID)
-                            raise Exception('Потрібно ввести капчу')
+                            raise NameError('Потрібно ввести капчу')
 
                     else:
                         raise Exception('знайдено спільного друга з ботом зі списку')
@@ -109,21 +119,12 @@ def worker(user, textfield):
                                                                                                                              sleep3))
                     time.sleep(sleep3)
             except Exception as e:
-                if e.message == u'Потрібно ввести капчу':
-                    textfield.insert('end', 'Юзер № {} не додав в друзі, причина: {} \n'.format(user[0], e.message))
+                if e.__class__ == NameError:
+                #if e.message == 'Потрібно ввести капчу':
+                    textfield.insert('end', 'Юзер № {} припинив роботу, причина: {} \n'.format(user[0], e.message))
                     raise Exception
                 textfield.insert('end', 'Юзер № {} не додав в друзі, причина: {} \n'.format(user[0], e.message))
 
-
-# Заносимо в базу Максимальну к-сть заявок друзів які можна кинути
-def maxRequestSend(ID):
-    con = db.connect(database="vkbot")
-    cur = con.cursor()
-    ran = random.randrange(35, 45)
-    query = "UPDATE users set max_request=? where ID=?"
-    cur.execute(query, (ran,ID,))
-    con.commit()
-    con.close()
 
 #  Цю зміннну потрібно щоб перевірити чи ботів сторінок нема у друзях.
 bots_id = []

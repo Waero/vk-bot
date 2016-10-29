@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
+import random
 import sqlite3 as db
 
 
@@ -33,6 +33,7 @@ def updateUserStart(uid, work):
     con.commit()
     con.close()
 
+
 # Метод який оновлює вк ІД юзера в базі
 def updateVkId(uid, vkID):
     con = db.connect(database="vkbot")
@@ -41,6 +42,7 @@ def updateVkId(uid, vkID):
     cur.execute(query, (vkID, uid,))
     con.commit()
     con.close()
+
 
 # Заносимо в базу +1 до к-сть заявок в друзі які акаунт відправив
 def sendRequestCount(ID):
@@ -52,3 +54,22 @@ def sendRequestCount(ID):
         cur.execute(query, (d[0]+1, ID))
         con.commit()
     con.close()
+
+
+# Заносимо в базу Максимальну к-сть заявок друзів які можна кинути
+def maxRequestSend(ID):
+    con = db.connect(database="vkbot")
+    cur = con.cursor()
+    ran = random.randrange(40, 45)
+    query = "UPDATE users set max_request=? where ID=?"
+    cur.execute(query, (ran,ID,))
+    con.commit()
+    con.close()
+
+def sendRequest(ID):
+    con = db.connect(database="vkbot")
+    cur = con.cursor()
+    ran = random.randrange(40, 45)
+    query = "SELECT send_request, max_request FROM users WHERE id=?"
+    send_request = cur.execute(query, (ID,))
+    return send_request.fetchone()

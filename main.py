@@ -51,15 +51,13 @@ class MainWindowBtn:
         #butfont = font.Font(family='Ubuntu', size=10)
         self.mainb = tk.Button(menu,
                           text="Main",
-                          width=8, height=1,
-                          bg="green", fg="white")
+                          width=8, height=1)
 
         self.mainb.bind("<Button-1>", self.openMain)
         self.mainb.grid(row=1, column=1)
         self.settingb = tk.Button(menu,
                              text="Settings",
-                             width=8, height=1,
-                             bg="green", fg="white")
+                             width=8, height=1)
 
         self.settingb.bind("<Button-1>", self.openSettings)
         self.settingb.grid(row=1, column=2)
@@ -81,7 +79,7 @@ class ButStart:
         self.but = tk.Button(bottom,
                             text="Start Bot",
                             width=12, height=3,
-                            bg="green", fg="white")
+                            bg="#09380a", fg="white")
         self.but.bind("<Button-1>", self.startBot)
         self.but.grid()
 
@@ -101,7 +99,7 @@ class UserFields:
         self.but = tk.Button(Sbody,
                             text="Add User",
                             width=8, height=2,
-                            bg="green", fg="white")
+                            bg="#09380a", fg="white")
         self.but.bind("<Button-1>", self.add_user)
         self.login.grid(row=0)
         self.loginField.grid(row=0, column=1)
@@ -121,7 +119,7 @@ class UserFields:
         self.edit_btn = tk.Button(Sbody,
                                   text='Edit',
                                   width=7, height=2,
-                                  bg='green', fg="white")
+                                  bg='#09380a', fg="white")
         self.edit_btn.bind("<Button-1>", self.edit_time)
         self.edit_btn.grid(row=0, rowspan=2, column=7)
         # Заповнюємо min і max значеннями з конфіг файла
