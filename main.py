@@ -10,23 +10,24 @@ import worker
 import sqlite3 as db
 import database
 from ConfigParser import SafeConfigParser
+from PIL import Image, ImageTk
 
-
+MAIN_BG='#242424'
 
 root = tk.Tk()
 root.title('Faby')
-root.configure(background='#242424')
+root.configure(background=MAIN_BG)
 root.resizable(width=False, height=False)
 root.minsize(width=700, height=500)
 
-top = tk.Frame(root, bg='')
-menu = tk.Frame(root, bg='')
-start = tk.Frame(root, bg='')
+top = tk.Frame(root, bg=MAIN_BG)
+menu = tk.Frame(root, bg=MAIN_BG)
+start = tk.Frame(root, bg=MAIN_BG)
 accounts = tk.Frame(root, bg='#e6e6e6')
 Sbody = tk.Frame(root, bg='#e6e6e6')
 
 canvas=tk.Canvas(accounts, bg='#e6e6e6')
-listFrame=tk.Frame(canvas, width=600, height=380, bg='#e6e6e6')
+listFrame=tk.Frame(canvas, width=550, height=380, bg='#e6e6e6')
 scrollb=tk.Scrollbar(accounts, orient="vertical", command=canvas.yview)
 scrollb.grid(row=9, rowspan=8, columnspan=100, sticky='nse')  #grid scrollbar in master, but
 canvas['yscrollcommand'] = scrollb.set   #attach scrollbar to frameTwo
@@ -34,7 +35,7 @@ canvas['yscrollcommand'] = scrollb.set   #attach scrollbar to frameTwo
 
 def AuxscrollFunction(event):
     # You need to set a max size for frameTwo. Otherwise, it will grow as needed, and scrollbar do not act
-    canvas.configure(scrollregion=canvas.bbox("all"), width=600, height=380)
+    canvas.configure(scrollregion=canvas.bbox("all"), width=550, height=380)
     #canvas.configure(scrollregion=canvas.bbox("all"))
 
 listFrame.bind("<Configure>", AuxscrollFunction)
@@ -47,35 +48,40 @@ canvas.grid(row=8, rowspan=10, column=0, columnspan=100, sticky='w')
 textfield = tk.Text(start, width=84, height=22,bg='#e6e6e6')
 textfield.place(x=0,y=0)
 
+
 # Кнопки в меню (різні скріни при кліку)
 class MainWindowBtn:
     def __init__(self):
         #butfont = font.Font(family='Ubuntu', size=10)
         self.start = tk.Button(menu,
                           text="Start",
-                          width=10, height=2,
+                          width=15, height=2,
                           bg='#e6e6e6', fg='black')
 
         self.start.bind("<Button-1>", self.openMain)
         self.start.place(x=0,y=0)
         self.accounts = tk.Button(menu,
                              text="Accounts",
-                             width=10, height=2,
+                             width=15, height=2,
                              bg='black', fg='white')
 
         self.accounts.bind("<Button-1>", self.openAccounts)
-        self.accounts.place(x=0,y=40)
+        self.accounts.place(x=0, y=40)
         self.sett_photo = tk.PhotoImage(file="123.png")
         self.settings = tk.Button(top,
-                                  highlightbackground='#242424',
-                                  highlightcolor ='#242424',
+                                  highlightbackground=MAIN_BG,
+                                  highlightcolor =MAIN_BG,
                                   borderwidth=0,
                                   highlightthickness=0,
                                   #text="Settings",
                                   width=140, height=38,
                                   bg='black', fg='white', image=self.sett_photo)
         self.settings.bind("<Button-1>", self.openSettings)
-        self.settings.place(x=530,y=20)
+        self.settings.place(x=530, y=30)
+
+        self.bgphoto = tk.PhotoImage(file="124.png")
+        self.bg_label = tk.Label(top, image=self.bgphoto, width=448, height=35)
+        self.bg_label.place(x=30, y=30)
 
     def openMain(self, event):
         self.start.configure(bg='#e6e6e6', fg='black')
@@ -83,8 +89,7 @@ class MainWindowBtn:
         self.settings.configure(bg='black', fg='white')
         Sbody.place_forget()
         accounts.place_forget()
-        start.place(x=100, y=100, width=600, height=400)
-
+        start.place(x=146, y=100, width=550, height=400)
 
     def openSettings(self, event):
         self.start.configure(bg='black', fg='white')
@@ -92,7 +97,7 @@ class MainWindowBtn:
         self.settings.configure(bg='#e6e6e6', fg='black')
         start.place_forget()
         accounts.place_forget()
-        Sbody.place(x=100, y=100, width=600, height=400)
+        Sbody.place(x=146, y=100, width=550, height=400)
 
     def openAccounts(self, event):
         self.start.configure(bg='black', fg='white')
@@ -100,23 +105,24 @@ class MainWindowBtn:
         self.settings.configure(bg='black', fg='white')
         start.place_forget()
         Sbody.place_forget()
-        accounts.place(x=100, y=100, width=600, height=400)
+        accounts.place(x=146, y=100, width=550, height=400)
 
 
 # Кнопка старт-бот
 class ButStart:
     def __init__(self):
-        self.but = tk.Button(start,
+        self.start_but = tk.Button(start,
                             text="Start Bot",
                             width=12, height=3,
                             bg="#09380a", fg="white")
-        self.but.bind("<Button-1>", self.startBot)
-        self.but.place(relx=0.5, rely=1.0, anchor='s')
+        self.start_but.bind("<Button-1>", self.startBot)
+        self.start_but.place(relx=0.5, rely=1.0, anchor='s')
 
     def startBot(self, event):
-        print "start"
+        self.start_but.place_forget()
+        green_work_label.place(x=50, y=10)
+        #work_label.place_forget()
         worker.goWork(textfield)
-        self.but.place_forget()
 
 
 # Поля юзера в Settings
@@ -192,7 +198,6 @@ class UserFields:
             but.bind("<Button-1>", lambda event, uid=str(i[0]), but=but: self.change(event, uid, but))
             self.id = self.id+1
 
-
     def change(self, event, uid, but):
         if but.config('text')[-1] == 'On':
             database.updateUserStart(uid, 0)
@@ -200,8 +205,6 @@ class UserFields:
         else:
             database.updateUserStart(uid, 1)
             but.config(text='On')
-
-
 
 # Метод для кнопки Edit і Save для рандомного часу
     def edit_time(self, event):
@@ -222,7 +225,6 @@ class UserFields:
 
             with open('config.ini', 'w') as f:
                 config.write(f)
-
 
 # Метод додавання нового юзера в базу
     def add_user(self, event):
@@ -262,7 +264,18 @@ if __name__ == "__main__":
     ButStart()
     UserFields()
     top.place(x=0, y=0, width=700, height=100)
-    menu.place(x=0, y=100, width=100, height=400)
-    start.place(x=100, y=100, width=600, height=400)
+    menu.place(x=0, y=100, width=150, height=400)
+    start.place(x=146, y=100, width=550, height=400)
+
+    # Червона кнопка
+    image = Image.open("125.png")
+    work = ImageTk.PhotoImage(image)
+    work_label = tk.Label(root, image=work, width=80, height=80, bg=MAIN_BG, bd=0)
+    work_label.place(x=50, y=10)
+
+    # Зелена кнопка
+    green_image = Image.open("127.png")
+    green_work = ImageTk.PhotoImage(green_image)
+    green_work_label = tk.Label(root, image=green_work, width=80, height=80, bg=MAIN_BG, bd=0)
 
     root.mainloop()
