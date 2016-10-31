@@ -14,25 +14,27 @@ from ConfigParser import SafeConfigParser
 
 
 root = tk.Tk()
-root.title('vk-bot')
+root.title('Faby')
+root.configure(background='#242424')
 root.resizable(width=False, height=False)
 root.minsize(width=700, height=500)
 
-menu = tk.Frame(root, width=700, height=27)
-body = tk.Frame(root, width=700, height=300)
-bottom = tk.Frame(root, width=700, height=150)
-Sbody = tk.Frame(root,  width=700, height=300)
+top = tk.Frame(root, bg='')
+menu = tk.Frame(root, bg='')
+start = tk.Frame(root, bg='')
+accounts = tk.Frame(root, bg='#e6e6e6')
+Sbody = tk.Frame(root, bg='#e6e6e6')
 
-canvas=tk.Canvas(Sbody)
-listFrame=tk.Frame(canvas, width=700, height=380)
-scrollb=tk.Scrollbar(Sbody, orient="vertical", command=canvas.yview)
-scrollb.grid(row=8, rowspan=10, columnspan=100, sticky='nse')  #grid scrollbar in master, but
+canvas=tk.Canvas(accounts, bg='#e6e6e6')
+listFrame=tk.Frame(canvas, width=600, height=380, bg='#e6e6e6')
+scrollb=tk.Scrollbar(accounts, orient="vertical", command=canvas.yview)
+scrollb.grid(row=9, rowspan=8, columnspan=100, sticky='nse')  #grid scrollbar in master, but
 canvas['yscrollcommand'] = scrollb.set   #attach scrollbar to frameTwo
 
 
 def AuxscrollFunction(event):
     # You need to set a max size for frameTwo. Otherwise, it will grow as needed, and scrollbar do not act
-    canvas.configure(scrollregion=canvas.bbox("all"), width=700, height=380)
+    canvas.configure(scrollregion=canvas.bbox("all"), width=600, height=380)
     #canvas.configure(scrollregion=canvas.bbox("all"))
 
 listFrame.bind("<Configure>", AuxscrollFunction)
@@ -42,61 +44,89 @@ canvas.create_window((10,10),window=listFrame, anchor='w')
 canvas.grid(row=8, rowspan=10, column=0, columnspan=100, sticky='w')
 
     #создаем виджет text для логіровання на main скріні
-textfield = tk.Text(body, height=20,width=100)
-textfield.pack()
+textfield = tk.Text(start, width=84, height=22,bg='#e6e6e6')
+textfield.place(x=0,y=0)
 
 # Кнопки в меню (різні скріни при кліку)
 class MainWindowBtn:
     def __init__(self):
         #butfont = font.Font(family='Ubuntu', size=10)
-        self.mainb = tk.Button(menu,
-                          text="Main",
-                          width=8, height=1)
+        self.start = tk.Button(menu,
+                          text="Start",
+                          width=10, height=2,
+                          bg='#e6e6e6', fg='black')
 
-        self.mainb.bind("<Button-1>", self.openMain)
-        self.mainb.grid(row=1, column=1)
-        self.settingb = tk.Button(menu,
-                             text="Settings",
-                             width=8, height=1)
+        self.start.bind("<Button-1>", self.openMain)
+        self.start.place(x=0,y=0)
+        self.accounts = tk.Button(menu,
+                             text="Accounts",
+                             width=10, height=2,
+                             bg='black', fg='white')
 
-        self.settingb.bind("<Button-1>", self.openSettings)
-        self.settingb.grid(row=1, column=2)
+        self.accounts.bind("<Button-1>", self.openAccounts)
+        self.accounts.place(x=0,y=40)
+        self.sett_photo = tk.PhotoImage(file="123.png")
+        self.settings = tk.Button(top,
+                                  highlightbackground='#242424',
+                                  highlightcolor ='#242424',
+                                  borderwidth=0,
+                                  highlightthickness=0,
+                                  #text="Settings",
+                                  width=122, height=33,
+                                  bg='black', fg='white', image=self.sett_photo)
+        self.settings.bind("<Button-1>", self.openSettings)
+        self.settings.place(x=550,y=20)
 
     def openMain(self, event):
-        Sbody.grid_forget()
-        body.grid(row=2)
-        bottom.grid(row=3)
+        self.start.configure(bg='#e6e6e6', fg='black')
+        self.accounts.configure(bg='black', fg='white')
+        self.settings.configure(bg='black', fg='white')
+        Sbody.place_forget()
+        accounts.place_forget()
+        start.place(x=100, y=100, width=600, height=400)
+
 
     def openSettings(self, event):
-        body.grid_forget()
-        bottom.grid_forget()
-        Sbody.grid(row=2)
+        self.start.configure(bg='black', fg='white')
+        self.accounts.configure(bg='black', fg='white')
+        self.settings.configure(bg='#e6e6e6', fg='black')
+        start.place_forget()
+        accounts.place_forget()
+        Sbody.place(x=100, y=100, width=600, height=400)
+
+    def openAccounts(self, event):
+        self.start.configure(bg='black', fg='white')
+        self.accounts.configure(bg='#e6e6e6', fg='black')
+        self.settings.configure(bg='black', fg='white')
+        start.place_forget()
+        Sbody.place_forget()
+        accounts.place(x=100, y=100, width=600, height=400)
 
 
 # Кнопка старт-бот
 class ButStart:
     def __init__(self):
-        self.but = tk.Button(bottom,
+        self.but = tk.Button(start,
                             text="Start Bot",
                             width=12, height=3,
                             bg="#09380a", fg="white")
         self.but.bind("<Button-1>", self.startBot)
-        self.but.grid()
+        self.but.place(relx=0.5, rely=1.0, anchor='s')
 
     def startBot(self, event):
         print "start"
         worker.goWork(textfield)
-        self.but.grid_forget()
+        self.but.place_forget()
 
 
 # Поля юзера в Settings
 class UserFields:
     def __init__(self):
-        self.login = tk.Label(Sbody, text='Login')
-        self.loginField = tk.Entry(Sbody)
-        self.password = tk.Label(Sbody, text='Password')
-        self.passwordField = tk.Entry(Sbody)
-        self.but = tk.Button(Sbody,
+        self.login = tk.Label(accounts, text='Login', bg='#e6e6e6')
+        self.loginField = tk.Entry(accounts)
+        self.password = tk.Label(accounts, text='Password', bg='#e6e6e6')
+        self.passwordField = tk.Entry(accounts)
+        self.but = tk.Button(accounts,
                             text="Add User",
                             width=8, height=2,
                             bg="#09380a", fg="white")
@@ -108,11 +138,11 @@ class UserFields:
         self.but.grid(row=0, rowspan=2, column=2)
 
 # Виводимо час для рандому
-        tk.Label(Sbody, text='Random Time in seconds').grid(row=0, column=4, columnspan=3)
-        tk.Label(Sbody, text=' min : ').grid(row=1, column=3)
+        tk.Label(Sbody, text='Random Time in seconds', bg='#e6e6e6').grid(row=0, column=4, columnspan=3)
+        tk.Label(Sbody, text=' min : ', bg='#e6e6e6').grid(row=1, column=3)
         self.min_time = tk.Entry(Sbody, width=10)
         self.min_time.grid(row=1, column=4)
-        tk.Label(Sbody, text=' max : ').grid(row=1, column=5)
+        tk.Label(Sbody, text=' max : ', bg='#e6e6e6').grid(row=1, column=5)
         self.max_time = tk.Entry(Sbody, width=10)
         self.max_time.grid(row=1, column=6)
         #self.image = tk.PhotoImage(file="123.png")
@@ -139,25 +169,25 @@ class UserFields:
         self.id = 6
 
         # Тут шапка
-        tk.Label(listFrame, text='  ').grid(row=3, column=0, sticky='w')
-        tk.Label(listFrame, text='ID').grid(row=4, column=0, padx=15, sticky='w')
-        tk.Label(listFrame,  text='Login').grid(row=4, column=1, padx=15, sticky='w')
-        tk.Label(listFrame, text='Password').grid(row=4, column=2, padx=15, sticky='w')
-        #tk.Label(listFrame, text='Send Request').grid(row=4, column=3, padx=15, sticky='w')
-        tk.Label(listFrame, text='Work?').grid(row=4, column=4, padx=15, sticky='w')
-        tk.Label(listFrame, text='  ').grid(row=5, column=0, sticky='w')
+        tk.Label(listFrame, text='  ', bg='#e6e6e6').grid(row=3, column=0, sticky='w')
+        tk.Label(listFrame, text='ID', bg='#e6e6e6').grid(row=4, column=0, padx=15, sticky='w')
+        tk.Label(listFrame,  text='Login', bg='#e6e6e6').grid(row=4, column=1, padx=15, sticky='w')
+        tk.Label(listFrame, text='Password', bg='#e6e6e6').grid(row=4, column=2, padx=15, sticky='w')
+        #tk.Label(listFrame, text='Send Request', bg='#e6e6e6').grid(row=4, column=3, padx=15, sticky='w')
+        tk.Label(listFrame, text='Work?', bg='#e6e6e6').grid(row=4, column=4, padx=15, sticky='w')
+        tk.Label(listFrame, text='  ', bg='#e6e6e6').grid(row=5, column=0, sticky='w')
 
         # Тут формуємо таблицю з усіх юзерів що є у базі
         for i in cur.execute("SELECT * FROM users;"):
-            tk.Label(listFrame, text=str(i[0])).grid(row=self.id, column=0, padx=15, sticky='w')
-            tk.Label(listFrame, text=str(i[1])).grid(row=self.id, column=1, padx=15, sticky='w')
-            tk.Label(listFrame, text=str(i[2])).grid(row=self.id, column=2, padx=15, sticky='w')
-            #tk.Label(listFrame, text=str(i[3])).grid(row=self.id, column=3, padx=15, sticky='w')
+            tk.Label(listFrame, text=str(i[0]), bg='#e6e6e6').grid(row=self.id, column=0, padx=15, sticky='w')
+            tk.Label(listFrame, text=str(i[1]), bg='#e6e6e6').grid(row=self.id, column=1, padx=15, sticky='w')
+            tk.Label(listFrame, text=str(i[2]), bg='#e6e6e6').grid(row=self.id, column=2, padx=15, sticky='w')
+            #tk.Label(listFrame, text=str(i[3]), bg='#e6e6e6').grid(row=self.id, column=3, padx=15, sticky='w')
             if i[5] == 1:
                 text = 'On'
             else:
                 text = 'Off'
-            but = tk.Button(listFrame, text=text)
+            but = tk.Button(listFrame, text=text, bg='#e6e6e6')
             but.grid(row=self.id, column=4, padx=15, sticky='w')
             but.bind("<Button-1>", lambda event, uid=str(i[0]), but=but: self.change(event, uid, but))
             self.id = self.id+1
@@ -216,11 +246,11 @@ class UserFields:
         self.loginField.delete("0", "end")
         self.passwordField.delete("0", "end")
         for i in lastList:
-            tk.Label(listFrame, text=str(i[0])).grid(row=self.id, column=0, padx=15, sticky='w')
-            tk.Label(listFrame, text=str(i[1])).grid(row=self.id, column=1, padx=15, sticky='w')
-            tk.Label(listFrame, text=str(i[2])).grid(row=self.id, column=2, padx=15, sticky='w')
-            #tk.Label(listFrame, text=str(i[3])).grid(row=self.id, column=3, padx=15, sticky='w')
-            but = tk.Button(listFrame, text='On')
+            tk.Label(listFrame, text=str(i[0]), bg='#e6e6e6').grid(row=self.id, column=0, padx=15, sticky='w')
+            tk.Label(listFrame, text=str(i[1]), bg='#e6e6e6').grid(row=self.id, column=1, padx=15, sticky='w')
+            tk.Label(listFrame, text=str(i[2]), bg='#e6e6e6').grid(row=self.id, column=2, padx=15, sticky='w')
+            #tk.Label(listFrame, text=str(i[3]), bg='#e6e6e6').grid(row=self.id, column=3, padx=15, sticky='w')
+            but = tk.Button(listFrame, text='On', bg='#e6e6e6')
             but.grid(row=self.id, column=4, padx=15, sticky='w')
             but.bind("<Button-1>", lambda event, uid=str(i[0]), but=but: self.change(event, uid, but))
             self.id = self.id+1
@@ -231,7 +261,8 @@ if __name__ == "__main__":
     MainWindowBtn()
     ButStart()
     UserFields()
-    menu.grid(row=1, sticky='W')
-    body.grid(row=2)
-    bottom.grid(row=3)
+    top.place(x=0, y=0, width=700, height=100)
+    menu.place(x=0, y=100, width=100, height=400)
+    start.place(x=100, y=100, width=600, height=400)
+
     root.mainloop()
