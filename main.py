@@ -72,10 +72,10 @@ class MainWindowBtn:
                                   borderwidth=0,
                                   highlightthickness=0,
                                   #text="Settings",
-                                  width=122, height=33,
+                                  width=140, height=38,
                                   bg='black', fg='white', image=self.sett_photo)
         self.settings.bind("<Button-1>", self.openSettings)
-        self.settings.place(x=550,y=20)
+        self.settings.place(x=530,y=20)
 
     def openMain(self, event):
         self.start.configure(bg='#e6e6e6', fg='black')
