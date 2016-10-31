@@ -30,10 +30,11 @@ def worker(user, textfield):
         textfield.insert('end', 'Юзер № {} зайшов до своїх друзів у нього їх {}. Він чекає {} секунд \n'.format(user[0],
                                                                                                                 repr(user_friends[0].__len__()).decode("unicode_escape"),
                                                                                                                 sleep2))
+        textfield.see('end')
         time.sleep(sleep2)
     except Exception as e:
         textfield.insert('end', 'Юзер № {} припинив роботу, причина : {} \n'.format(user[0], e.message))
-
+        textfield.see('end')
     # Проходимось по всіх друзях юзера і по його друзях. Основний код
     for uid in user_friends[0]:
 
@@ -44,6 +45,7 @@ def worker(user, textfield):
                                                                                                         uid,
                                                                                                         sleep3))
         #textfield.insert('end', repr(open_friend_profile).decode("unicode_escape"))
+        textfield.see('end')
         time.sleep(sleep3)
 
         #Витягуємо друзів друга
@@ -51,6 +53,7 @@ def worker(user, textfield):
         textfield.insert('end', 'Юзер № {} зайшов до друзів друга id= {}. Він чекає {} секунд \n'.format(user[0],
                                                                                                          uid,
                                                                                                          sleep2))
+        textfield.see('end')
         time.sleep(sleep2)
 
         #Знаходимо людей яких у нас ще нема в друзях і віднімаємо тих кому вже відправляли запрос
@@ -61,6 +64,7 @@ def worker(user, textfield):
         textfield.insert('end', 'Юзер № {} знайшов {} не доданих друзів. Він чекає {} секунд \n'.format(user[0],
                                                                                                         len(no_friends_yet),
                                                                                                         sleep))
+        textfield.see('end')
         time.sleep(sleep)
         # Відкриваємо профіль юзера з людей яких у нас ще нема в друзях
         for no_friendID in no_friends_yet:
@@ -69,6 +73,7 @@ def worker(user, textfield):
             if send_and_max_request[1] == send_and_max_request[0]:
                 textfield.insert('end',
                                  'Юзер № {} припинив роботу. Відправлено максимальну к-сь запитів на день \n'.format(user[0]))
+                textfield.see('end')
                 raise Exception('Stop')
             #if send_and_max_request
             open_user_profile = getUser(session=user_friends[1], id=no_friendID)
@@ -76,6 +81,7 @@ def worker(user, textfield):
                                                                                                                   no_friendID,
                                                                                                                   sleep2))
             # textfield.insert('end', repr(open_friend_profile).decode("unicode_escape"))
+            textfield.see('end')
             time.sleep(sleep2)
 
             # Якщо сторінка друга видалена то vk вертає error. Тут його ловимо і виводимо
@@ -91,6 +97,7 @@ def worker(user, textfield):
                                      user[0],
                                      no_friendID,
                                      sleep4))
+                textfield.see('end')
                 time.sleep(sleep4)
                 # Якщо спільних друзів більше 3 то йдемо далі.
                 if mutal.__len__() >= 3:
@@ -105,6 +112,7 @@ def worker(user, textfield):
                                                      no_friendID,
                                                      sleep))
                             database.sendRequestCount(user[0])  # Додаємо в каунтер +1
+                            textfield.see('end')
                             time.sleep(sleep)
 
                         except Exception as e:
@@ -117,14 +125,16 @@ def worker(user, textfield):
                     textfield.insert('end', 'Юзер № {} не знайшов 3 спільних друзів з id= {}. Він чекає {} секунд \n'.format(user[0],
                                                                                                                              no_friendID,
                                                                                                                              sleep3))
+                    textfield.see('end')
                     time.sleep(sleep3)
             except Exception as e:
                 if e.__class__ == NameError:
                 #if e.message == 'Потрібно ввести капчу':
                     textfield.insert('end', 'Юзер № {} припинив роботу, причина: {} \n'.format(user[0], e.message))
+                    textfield.see('end')
                     raise Exception
                 textfield.insert('end', 'Юзер № {} не додав в друзі, причина: {} \n'.format(user[0], e.message))
-
+                textfield.see('end')
 
 #  Цю зміннну потрібно щоб перевірити чи ботів сторінок нема у друзях.
 bots_id = []
