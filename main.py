@@ -5,13 +5,17 @@ import Tkinter as tk
 import platform
 import os
 
+import sys
+
 import vkapi
 import worker
 import sqlite3 as db
 import database
 from ConfigParser import SafeConfigParser
 
-
+# Потрібно щоб не вискакувало вікно на віндовсі при закритті програми
+sys.stderr = open('error.log', 'w')
+sys.stdout = open('output.log', 'w')
 
 root = tk.Tk()
 root.title('vk-bot')
