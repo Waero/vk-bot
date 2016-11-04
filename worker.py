@@ -9,7 +9,9 @@ import database
 from vkapi import *
 import sqlite3 as db
 from ConfigParser import SafeConfigParser
+from datetime import date, datetime
 
+WORK = True
 
 def worker(user, textfield):
     # Витягуємо в змінні max i min значення для рандому
@@ -17,8 +19,10 @@ def worker(user, textfield):
     config.read('config.ini')
     max = config.getint('main', 'max')
     min = config.getint('main', 'min')
+
+    # метод максимальних і відправлених реквестів
+    requestPerDay(user)
     # При старті присвоюємо юзерам час очікування, щоб кожен стартанув у різний час
-    database.maxRequestSend(user[0])
     sleep = random.randrange(min, max)
     textfield.insert('end', "Юзер № {} налаштований і чекає {} секунд \n".format(user[0], sleep))
     time.sleep(sleep)
@@ -69,6 +73,9 @@ def worker(user, textfield):
         time.sleep(sleep)
         # Відкриваємо профіль юзера з людей яких у нас ще нема в друзях
         for no_friendID in no_friends_yet:
+            # Перевіряємо чи не натиснута кнопка СТОП
+            if WORK == False:
+                raise Exception('Stop')
             # Перевіряємо чи не перебільшений ліміт на день
             send_and_max_request = database.sendRequest(user[0])
             if send_and_max_request[1] == send_and_max_request[0]:
@@ -151,7 +158,7 @@ def goWork(textfield):
         t = threading.Thread(target=worker, args=(i,textfield))
         t.start()
 
-    textfield.insert('end',"Всі потоки запущено, програма почала працювати!\n")
+    textfield.insert('end',"Всі потоки запущено, Faby почав працювати!\n")
 
 
 # Метод на капчу (поки не імплементований)
@@ -162,3 +169,9 @@ def ifCaptcha(e, session, id):
     key = config.get('main', 'key')
     addToFriendCaptcha(session=session, id=id, captcha_sid=e.captcha_sid, captcha_key=key)
 
+
+def requestPerDay(user):
+    database.maxRequestSend(user[0])
+    day = datetime.strptime(user[7], '%Y-%m-%d').date()
+    if day != date.today():
+        database.updateUserRequest(user[0])

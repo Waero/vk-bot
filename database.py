@@ -3,7 +3,8 @@
 import random
 import sqlite3 as db
 
-
+from datetime import date
+today = date(2013,11,1)
 c = db.connect(database="vkbot")
 cu = c.cursor()
 try:
@@ -15,7 +16,9 @@ try:
             send_request INTEGER DEFAULT 0,
             max_request INTEGER,
             start_work BOOLEAN DEFAULT 1,
-            vk_id INTEGER
+            vk_id INTEGER,
+            request_day DATE DEFAULT '2013-11-1',
+            all_send_request INTEGER DEFAULT 0
             );
     """)
 except db.DatabaseError, x:
@@ -44,14 +47,14 @@ def updateVkId(uid, vkID):
     con.close()
 
 
-# Заносимо в базу +1 до к-сть заявок в друзі які акаунт відправив
+# Заносимо в базу +1 до к-сть заявок в друзі які акаунт відправив а також +1 до загальної к-сті
 def sendRequestCount(ID):
     con = db.connect(database="vkbot")
     cur = con.cursor()
-    current = cur.execute('''SELECT send_request FROM users WHERE id=?''', (ID,))
-    query = "UPDATE users set send_request=? where id=?"
+    current = cur.execute('''SELECT send_request, all_send_request  FROM users WHERE id=?''', (ID,))
+    query = "UPDATE users set send_request=?, all_send_request=? where id=?"
     for d in current:
-        cur.execute(query, (d[0]+1, ID))
+        cur.execute(query, (d[0]+1, d[1]+1, ID))
         con.commit()
     con.close()
 
@@ -69,7 +72,15 @@ def maxRequestSend(ID):
 def sendRequest(ID):
     con = db.connect(database="vkbot")
     cur = con.cursor()
-    ran = random.randrange(40, 45)
     query = "SELECT send_request, max_request FROM users WHERE id=?"
     send_request = cur.execute(query, (ID,))
     return send_request.fetchone()
+
+
+# Метод щоб оновити к-сть відправлених заявок на день
+def updateUserRequest(ID):
+    con = db.connect(database="vkbot")
+    cur = con.cursor()
+    query = "UPDATE users set send_request=0, request_day=? where ID=?"
+    cur.execute(query, (date.today(), ID,))
+    con.commit()
