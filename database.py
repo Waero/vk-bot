@@ -18,7 +18,8 @@ try:
             start_work BOOLEAN DEFAULT 1,
             vk_id INTEGER,
             request_day DATE DEFAULT '2013-11-1',
-            all_send_request INTEGER DEFAULT 0
+            all_send_request INTEGER DEFAULT 0,
+            name VARCHAR
             );
     """)
 except db.DatabaseError, x:

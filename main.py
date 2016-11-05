@@ -18,8 +18,8 @@ from PIL import Image, ImageTk
 MAIN_BG='#242424'
 
 # Потрібно щоб не вискакувало вікно на віндовсі при закритті програми
-sys.stderr = open('error.log', 'w')
-sys.stdout = open('output.log', 'w')
+#sys.stderr = open('error.log', 'w')
+#sys.stdout = open('output.log', 'w')
 
 root = tk.Tk()
 root.title('Faby')
@@ -82,22 +82,22 @@ class MainWindowBtn:
         self.settings_img_stun = False
         self.results_img_stun = False
     # Картинки на кнопки
-        self.start_photo = tk.PhotoImage(file="start_default.png")
-        self.start_photo1 = tk.PhotoImage(file="start_hover.png")
-        self.stop_default_photo = tk.PhotoImage(file="stop_default.png")
-        self.stop_hover_photo = tk.PhotoImage(file="stop.png")
-        self.accounts_on = tk.PhotoImage(file="accounts_on.png")
-        self.accounts_off = tk.PhotoImage(file="accounts_off.png")
-        self.accounts_active = tk.PhotoImage(file="accoynts_btn_active.png")
-        self.process_btn_on = tk.PhotoImage(file="process_on.png")
-        self.process_btn_off = tk.PhotoImage(file="process_off.png")
-        self.process_btn_active = tk.PhotoImage(file="process_btn_active.png")
-        self.settings_btn_on = tk.PhotoImage(file="settings_btn_on.png")
-        self.settings_btn_off = tk.PhotoImage(file="settings_btn_off.png")
-        self.settings_btn_active = tk.PhotoImage(file="settings_btn_active.png")
-        self.results_btn_on = tk.PhotoImage(file="results_btn_on.png")
-        self.results_btn_off = tk.PhotoImage(file="results_btn_off.png")
-        self.results_btn_active = tk.PhotoImage(file="results_btn_active.png")
+        self.start_photo = ImageTk.PhotoImage(Image.open("start_default.png"))
+        self.start_photo1 = ImageTk.PhotoImage(Image.open("start_hover.png"))
+        self.stop_default_photo = ImageTk.PhotoImage(Image.open("stop_default.png"))
+        self.stop_hover_photo = ImageTk.PhotoImage(Image.open("stop.png"))
+        self.accounts_on = ImageTk.PhotoImage(Image.open("accounts_on.png"))
+        self.accounts_off = ImageTk.PhotoImage(Image.open("accounts_off.png"))
+        self.accounts_active = ImageTk.PhotoImage(Image.open("accoynts_btn_active.png"))
+        self.process_btn_on = ImageTk.PhotoImage(Image.open("process_on.png"))
+        self.process_btn_off = ImageTk.PhotoImage(Image.open("process_off.png"))
+        self.process_btn_active = ImageTk.PhotoImage(Image.open("process_btn_active.png"))
+        self.settings_btn_on = ImageTk.PhotoImage(Image.open("settings_btn_on.png"))
+        self.settings_btn_off = ImageTk.PhotoImage(Image.open("settings_btn_off.png"))
+        self.settings_btn_active = ImageTk.PhotoImage(Image.open("settings_btn_active.png"))
+        self.results_btn_on = ImageTk.PhotoImage(Image.open("results_btn_on.png"))
+        self.results_btn_off = ImageTk.PhotoImage(Image.open("results_btn_off.png"))
+        self.results_btn_active = ImageTk.PhotoImage(Image.open("results_btn_active.png"))
 
     # Кнопка Процес
         self.process_btn = tk.Button(menu,
@@ -381,23 +381,20 @@ class Accounts:
         # Тут шапка
         tk.Label(listFrame, text='  ', bg='#e6e6e6').grid(row=3, column=0, sticky='w')
         tk.Label(listFrame, text='ID', bg='#e6e6e6').grid(row=4, column=0, padx=15, sticky='w')
-        tk.Label(listFrame,  text='Логин', bg='#e6e6e6').grid(row=4, column=1, padx=15, sticky='w')
-        tk.Label(listFrame, text='Пароль', bg='#e6e6e6').grid(row=4, column=2, padx=15, sticky='w')
-        tk.Label(listFrame, text='Работать?', bg='#e6e6e6').grid(row=4, column=3, padx=15, sticky='w')
+        tk.Label(listFrame,  text='Аккаунт', bg='#e6e6e6').grid(row=4, column=1, padx=15, sticky='w')
+        tk.Label(listFrame, text='Работать?', bg='#e6e6e6').grid(row=4, column=2, padx=15, sticky='w')
         tk.Label(listFrame, text='  ', bg='#e6e6e6').grid(row=5, column=0, sticky='w')
 
         # Тут формуємо таблицю з усіх юзерів що є у базі
         for i in cur.execute("SELECT * FROM users;"):
             tk.Label(listFrame, text=str(i[0]), bg='#e6e6e6').grid(row=self.id, column=0, padx=15, sticky='w')
-            tk.Label(listFrame, text=str(i[1]), bg='#e6e6e6').grid(row=self.id, column=1, padx=15, sticky='w')
-            tk.Label(listFrame, text=str(i[2]), bg='#e6e6e6').grid(row=self.id, column=2, padx=15, sticky='w')
-            tk.Label(listFrame, text=str(i[3]), bg='#e6e6e6').grid(row=self.id, column=3, padx=15, sticky='w')
+            tk.Label(listFrame, text=i[9], bg='#e6e6e6').grid(row=self.id, column=1, padx=15, sticky='w')
             if i[5] == 1:
                 text = 'Да'
             else:
                 text = 'Нет'
             but = tk.Button(listFrame, text=text, bg='#e6e6e6')
-            but.grid(row=self.id, column=3, padx=15, sticky='w')
+            but.grid(row=self.id, column=2, padx=15, sticky='w')
             but.bind("<Button-1>", lambda event, uid=str(i[0]), but=but: self.change(event, uid, but))
             self.id = self.id+1
 
@@ -417,25 +414,25 @@ class Accounts:
         login = self.loginField.get()
         password = self.passwordField.get()
         vk_id = vkapi.getVkId(login=login, password=password)
+        uname = vk_id[0]['first_name'] + ' ' + vk_id[0]['last_name']
         # This is the qmark style:
-        cur.execute("insert into users (login, password, vk_id) values (?, ?, ?)", (login, password, vk_id))
+        cur.execute("insert into users (login, password, vk_id, name) values (?, ?, ?, ?)", (login, password, vk_id[0]['uid'], uname))
         con.commit()
         lastList = cur.execute("SELECT * FROM users ORDER BY id DESC LIMIT 1")
 
         # Виводимо алерт що юзера додано в базу
         tkMessageBox.showinfo(
             "Updated",
-            "User {} is added".format(login)
+            "Аккаунт {} успешно додан".format(uname.encode('utf-8'))
         )
         # Очищаємо поле для ввода логіна і пароля і додаємо останнього юзера на екран
         self.loginField.delete("0", "end")
         self.passwordField.delete("0", "end")
         for i in lastList:
             tk.Label(listFrame, text=str(i[0]), bg='#e6e6e6').grid(row=self.id, column=0, padx=15, sticky='w')
-            tk.Label(listFrame, text=str(i[1]), bg='#e6e6e6').grid(row=self.id, column=1, padx=15, sticky='w')
-            tk.Label(listFrame, text=str(i[2]), bg='#e6e6e6').grid(row=self.id, column=2, padx=15, sticky='w')
+            tk.Label(listFrame, text=i[9], bg='#e6e6e6').grid(row=self.id, column=1, padx=15, sticky='w')
             but = tk.Button(listFrame, text='Да', bg='#e6e6e6')
-            but.grid(row=self.id, column=3, padx=15, sticky='w')
+            but.grid(row=self.id, column=2, padx=15, sticky='w')
             but.bind("<Button-1>", lambda event, uid=str(i[0]), but=but: self.change(event, uid, but))
             self.id = self.id+1
         con.close()
@@ -458,9 +455,9 @@ class Results:
         # Тут формуємо таблицю з усіх юзерів що є у базі
         for i in cur.execute("SELECT * FROM users;"):
             tk.Label(r_listFrame, text=str(i[0]), bg='#e6e6e6').grid(row=self.r_id, column=0, padx=15, sticky='w')
-            tk.Label(r_listFrame, text=str(i[1]), bg='#e6e6e6').grid(row=self.r_id, column=1, padx=15, sticky='w')
-            tk.Label(r_listFrame, text=str(i[3]), bg='#e6e6e6').grid(row=self.r_id, column=2, padx=15, sticky='w')
-            tk.Label(r_listFrame, text=str(i[8]), bg='#e6e6e6').grid(row=self.r_id, column=3, padx=15, sticky='w')
+            tk.Label(r_listFrame, text=i[9], bg='#e6e6e6').grid(row=self.r_id, column=1, padx=15, sticky='w')
+            tk.Label(r_listFrame, text=str(i[3]), bg='#e6e6e6').grid(row=self.r_id, column=2, padx=15)
+            tk.Label(r_listFrame, text=str(i[8]), bg='#e6e6e6').grid(row=self.r_id, column=3, padx=15)
 
             self.r_id = self.r_id+1
 
@@ -475,13 +472,12 @@ if __name__ == "__main__":
     start.place(x=146, y=100, width=550, height=400)
 
     # Червона кнопка
-    image = Image.open("activity_off.png")
-    work = ImageTk.PhotoImage(image)
+    work = ImageTk.PhotoImage(Image.open("activity_off.png"))
     work_label = tk.Label(top, image=work, width=450, height=80, bg=MAIN_BG, bd=0)
     work_label.place(x=30, y=5)
 
     # Зелена кнопка
-    green_work = tk.PhotoImage(file="activity_on.png")
+    green_work = ImageTk.PhotoImage(Image.open("activity_on.png"))
     green_work_label = tk.Label(top, image=green_work, width=450, height=80,bd=0, bg=MAIN_BG)
 
 

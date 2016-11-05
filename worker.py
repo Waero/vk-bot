@@ -27,11 +27,11 @@ def worker(user, textfield):
     textfield.insert('end', "Юзер № {} налаштований і чекає {} секунд \n".format(user[0], sleep))
     time.sleep(sleep)
 
-    # Отримуємо всіх друзів юзера (тянемо тільки ID). Також ловимо помилку про авторизацією і виводимо її
+    # Отримуємо всіх друзів юзера (тянемо тільки ID). Також ловимо помилку про авторизацію і виводимо її
     try:
         user_friends = getFriendsAndSession(login=user[1], password=user[2])
         sleep2 = random.randrange(min, max)
-        textfield.insert('end', 'Юзер № {} зайшов до своїх друзів у нього їх {}. Він чекає {} секунд \n'.format(user[0],
+        textfield.insert('end', 'Юзер № {} зайшов до друзів у нього їх {}. Чекає {} секунд \n'.format(user[0],
                                                                                                                 repr(user_friends[0].__len__()).decode("unicode_escape"),
                                                                                                                 sleep2))
         time.sleep(sleep2)
@@ -46,7 +46,7 @@ def worker(user, textfield):
         # Відкриваємо профіль друга
         sleep3 = random.randrange(min, max)
         open_friend_profile = getUser(session=user_friends[1], id=uid)
-        textfield.insert('end', 'Юзер № {} відкрив профіль друга id= {}. Він чекає {} секунд \n'.format(user[0],
+        textfield.insert('end', 'Юзер № {} відкрив профіль друга id= {}. Чекає {} секунд \n'.format(user[0],
                                                                                                         uid,
                                                                                                         sleep3))
         #textfield.insert('end', repr(open_friend_profile).decode("unicode_escape"))
@@ -55,7 +55,7 @@ def worker(user, textfield):
 
         #Витягуємо друзів друга
         friends_from_friend = getFriends(session=user_friends[1], id=uid)
-        textfield.insert('end', 'Юзер № {} зайшов до друзів друга id= {}. Він чекає {} секунд \n'.format(user[0],
+        textfield.insert('end', 'Юзер № {} зайшов до друзів друга id= {}. Чекає {} секунд \n'.format(user[0],
                                                                                                          uid,
                                                                                                          sleep2))
         textfield.see('end')
@@ -65,8 +65,7 @@ def worker(user, textfield):
         mutal_friends = getMutalFriends(session=user_friends[1], id=uid)
         sended_request = getRequests(session=user_friends[1])
         no_friends_yet = set(friends_from_friend) ^ set(mutal_friends) ^ set(sended_request)
-        #no_friends_yet = list(set(no_friends_yet))
-        textfield.insert('end', 'Юзер № {} знайшов {} не доданих друзів. Він чекає {} секунд \n'.format(user[0],
+        textfield.insert('end', 'Юзер № {} знайшов {} не доданих друзів. Чекає {} секунд \n'.format(user[0],
                                                                                                         len(no_friends_yet),
                                                                                                         sleep))
         textfield.see('end')
@@ -80,12 +79,12 @@ def worker(user, textfield):
             send_and_max_request = database.sendRequest(user[0])
             if send_and_max_request[1] == send_and_max_request[0]:
                 textfield.insert('end',
-                                 'Юзер № {} припинив роботу. Відправлено максимальну к-сь запитів на день \n'.format(user[0]))
+                                 'Юзер № {} припинив роботу. Відправлено макс к-сь запитів на день \n'.format(user[0]))
                 textfield.see('end')
                 raise Exception('Stop')
             #if send_and_max_request
             open_user_profile = getUser(session=user_friends[1], id=no_friendID)
-            textfield.insert('end', 'Юзер № {} відкрив профіль не друга id= {}. Він чекає {} секунд \n'.format(user[0],
+            textfield.insert('end', 'Юзер № {} відкрив профіль не друга id= {}. Чекає {} секунд \n'.format(user[0],
                                                                                                                   no_friendID,
                                                                                                                   sleep2))
             # textfield.insert('end', repr(open_friend_profile).decode("unicode_escape"))
@@ -101,7 +100,7 @@ def worker(user, textfield):
                 mutal = getMutalFriends(session=user_friends[1], id=no_friendID)
                 sleep4 = random.randrange(min, max)
                 textfield.insert('end',
-                                 'Юзер № {} перевіряє чи є більше 3 спільних друзів з id={}. Він чекає {} секунд \n'.format(
+                                 'Юзер № {} перевіряє чи є більше 3 спільних друзів з id={}. Чекає {} секунд \n'.format(
                                      user[0],
                                      no_friendID,
                                      sleep4))
@@ -115,7 +114,7 @@ def worker(user, textfield):
                         try:
                             response = addToFriend(session=user_friends[1], id=no_friendID)
                             textfield.insert('end',
-                                                 'Юзер № {} відправив заявку в друзі юзеру з id= {}. Він чекає {} секунд \n'.format(
+                                                 'Юзер № {} відправив заявку в друзі юзеру id= {}. Чекає {} секунд \n'.format(
                                                      user[0],
                                                      no_friendID,
                                                      sleep))
@@ -130,7 +129,7 @@ def worker(user, textfield):
                     else:
                         raise Exception('знайдено спільного друга з ботом зі списку')
                 else:
-                    textfield.insert('end', 'Юзер № {} не знайшов 3 спільних друзів з id= {}. Він чекає {} секунд \n'.format(user[0],
+                    textfield.insert('end', 'Юзер № {} не знайшов 3 спільних друзів з id= {}. Чекає {} секунд \n'.format(user[0],
                                                                                                                              no_friendID,
                                                                                                                              sleep3))
                     textfield.see('end')

@@ -14,11 +14,12 @@ def getFriendsAndSession(login, password):
     return uf, session
 
 
+# Метод витягує id користувача
 def getVkId(login, password):
     session = vk.AuthSession(scope='friends, offline', app_id='5677795', user_login=login, user_password=password)
     vkApi = vk.API(session)
     vk_id = vkApi.users.get()
-    return vk_id[0]['uid']
+    return vk_id
 
 
 # Метод витягує профіль юзера по ID
