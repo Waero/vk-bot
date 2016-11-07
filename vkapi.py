@@ -6,7 +6,7 @@ import vk
 
 # Метод створює сесію і витягує друзів користувача
 def getFriendsAndSession(login, password):
-    session = vk.AuthSession(scope='friends, offline', app_id='5677795', user_login=login, user_password=password)
+    session = vk.AuthSession(scope='friends, messages, offline', app_id='5677795', user_login=login, user_password=password)
     vkApi = vk.API(session)
     uf = vkApi.friends.get(order='hints')
     # uf - cписок всіх друзів
@@ -61,3 +61,14 @@ def getRequests(session):
     vkApi = vk.API(session)
     sended_request = vkApi.friends.getRequests(out=1)
     return sended_request
+
+
+# Метод витягує нові повідомлення
+def getMessages(session):
+    vkApi = vk.API(session, v='5.60')
+    new_messages = vkApi.messages.getDialogs(unread=1)
+    return new_messages
+
+def sendMessage(session, f_id, message):
+    vkApi = vk.API(session, v='5.60')
+    send_messages = vkApi.messages.send(user_id=f_id, message=message)

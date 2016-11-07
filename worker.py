@@ -13,6 +13,7 @@ from datetime import date, datetime
 
 WORK = True
 
+
 def worker(user, textfield):
     # Витягуємо в змінні max i min значення для рандому
     config = SafeConfigParser()
@@ -39,10 +40,11 @@ def worker(user, textfield):
     except Exception as e:
         textfield.insert('end', 'Юзер № {} припинив роботу, причина : {} \n'.format(user[0], e.message))
         textfield.see('end')
-
+# Перевіряємо чи не вимкнуто роботу бота
+    if WORK == False:
+        raise Exception('Stop')
     # Проходимось по всіх друзях юзера і по його друзях. Основний код
     for uid in user_friends[0]:
-
         # Відкриваємо профіль друга
         sleep3 = random.randrange(min, max)
         open_friend_profile = getUser(session=user_friends[1], id=uid)
@@ -82,7 +84,7 @@ def worker(user, textfield):
                                  'Юзер № {} припинив роботу. Відправлено макс к-сь запитів на день \n'.format(user[0]))
                 textfield.see('end')
                 raise Exception('Stop')
-            #if send_and_max_request
+            # Відкриваємо профіль користувача
             open_user_profile = getUser(session=user_friends[1], id=no_friendID)
             textfield.insert('end', 'Юзер № {} відкрив профіль не друга id= {}. Чекає {} секунд \n'.format(user[0],
                                                                                                                   no_friendID,
@@ -110,9 +112,9 @@ def worker(user, textfield):
                 if mutal.__len__() >= 3:
                     # Перевіряємо чи нема ботів-сторінок в друзях. Якщо є, то не додаємо їх.
                     if [i for i in mutal if i in bots_id] == []:
-                        # ловимо капчу якщо буде
+                        # Додаємо в друзі або ловимо капчу (якщо буде завершуємо роботу цього бота)
                         try:
-                            response = addToFriend(session=user_friends[1], id=no_friendID)
+                            addToFriend(session=user_friends[1], id=no_friendID)
                             textfield.insert('end',
                                                  'Юзер № {} відправив заявку в друзі юзеру id= {}. Чекає {} секунд \n'.format(
                                                      user[0],
@@ -160,7 +162,7 @@ def goWork(textfield):
     textfield.insert('end',"Всі потоки запущено, Faby почав працювати!\n")
 
 
-# Метод на капчу (поки не імплементований)
+# Метод на капчу (поки не імплементований. не потрібно імплементовувати)
 def ifCaptcha(e, session, id):
     e.captcha_img
     config = SafeConfigParser()
@@ -169,8 +171,17 @@ def ifCaptcha(e, session, id):
     addToFriendCaptcha(session=session, id=id, captcha_sid=e.captcha_sid, captcha_key=key)
 
 
+# Метод к-сті запросів за день, а також максимальної к-сті
 def requestPerDay(user):
     database.maxRequestSend(user[0])
     day = datetime.strptime(user[7], '%Y-%m-%d').date()
     if day != date.today():
         database.updateUserRequest(user[0])
+
+
+# Метод автоматичної відповіді на повідомлення
+def autoAnswerOnMessage(session, message):
+    new_messages = getMessages(session)
+    if new_messages['count'] != 0:
+        for i in new_messages['items']:
+            sendMessage(session=session, f_id=i['message']['user_id'], message=message)
