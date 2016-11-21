@@ -22,6 +22,7 @@ def worker(user, textfield):
     min = config.getint('main', 'min')
     min_mutal = config.getint('main', 'mutal')
     message = config.get('main', 'message')
+    auto_answer = config.getint('main', 'auto_answer')
 
     # метод максимальних і відправлених реквестів
     requestPerDay(user)
@@ -69,7 +70,8 @@ def worker(user, textfield):
         #Знаходимо людей яких у нас ще нема в друзях і віднімаємо тих кому вже відправляли запрос
         mutal_friends = getMutalFriends(session=user_friends[1], id=uid)
         sended_request = getRequests(session=user_friends[1])
-        no_friends_yet = set(friends_from_friend) ^ set(mutal_friends) ^ set(sended_request)
+        friends_without_mutal = set(friends_from_friend) - set(mutal_friends)
+        no_friends_yet =  friends_without_mutal - set(sended_request)
         textfield.insert('end', 'Юзер № {} знайшов {} не доданих друзів. Чекає {} секунд \n'.format(user[0],
                                                                                                     len(no_friends_yet),
                                                                                                     sleep))
@@ -81,7 +83,8 @@ def worker(user, textfield):
             if WORK == False:
                 raise Exception('Stop')
             # Перевіряємо чи нема не прочитаних повідомлень, якщо є, то відправляємо стандартне повідомлення.
-            autoAnswerOnMessage(session=user_friends[1], message=message)
+            if auto_answer == 1:
+                autoAnswerOnMessage(session=user_friends[1], message=message)
             # Перевіряємо чи не перебільшений ліміт на день
             send_and_max_request = database.sendRequest(user[0])
             if send_and_max_request[1] == send_and_max_request[0]:
