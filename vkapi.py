@@ -25,14 +25,18 @@ def getVkId(login, password):
 # Метод витягує профіль юзера по ID
 def getUser(session,id):
     vkApi = vk.API(session)
-    u = vkApi.users.get(user_ids=id, fields='last_seen')
+    u = vkApi.users.get(user_ids=id, fields='last_seen, counters')
     return u
 
 
-# Метод витягує друзів друга по ID
+# Метод витягує друзів друга по ID, якщо сторінка заблокована то вертаємо 0
 def getFriends(session, id):
     vkApi = vk.API(session)
-    u = vkApi.friends.get(user_id=id, order='hints')
+    try:
+        u = vkApi.friends.get(user_id=id, order='hints')
+    except Exception as e:
+        print e
+        u = 0
     return u
 
 
@@ -69,6 +73,8 @@ def getMessages(session):
     new_messages = vkApi.messages.getDialogs(unread=1)
     return new_messages
 
+
+# Метод відправки повідомлення для авто-ответа
 def sendMessage(session, f_id, message):
     vkApi = vk.API(session, v='5.60')
     send_messages = vkApi.messages.send(user_id=f_id, message=message)

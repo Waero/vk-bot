@@ -21,6 +21,7 @@ def worker(user, textfield):
     max = config.getint('main', 'max')
     min = config.getint('main', 'min')
     min_mutal = config.getint('main', 'mutal')
+    max_friends = config.getint('main', 'max_friends')
     message = config.get('main', 'message')
     auto_answer = config.getint('main', 'auto_answer')
 
@@ -28,7 +29,7 @@ def worker(user, textfield):
     requestPerDay(user)
     # При старті присвоюємо юзерам час очікування, щоб кожен стартанув у різний час
     sleep = random.randrange(min, max)
-    textfield.insert('end', "Юзер № {} налаштований і чекає {} секунд \n".format(user[0], sleep))
+    textfield.insert('end', "Юзер № {} настроен и ждет {} секунд \n".format(user[0], sleep))
     time.sleep(sleep)
 
     # Отримуємо всіх друзів юзера (тянемо тільки ID). Також ловимо помилку про авторизацію і виводимо її
@@ -36,13 +37,13 @@ def worker(user, textfield):
         sleep2 = random.randrange(min, max)
         user_friends = getFriendsAndSession(login=user[1], password=user[2])
         #random.shuffle(user_friends[0])  # Перемішуємо друзів, щоб не проходитись завжди від початку списку
-        textfield.insert('end', 'Юзер № {} зайшов до друзів у нього їх {}. Чекає {} секунд \n'.format(user[0],
+        textfield.insert('end', 'Юзер № {} зашел к друзьям у него их {}. Ждет {} секунд \n'.format(user[0],
                                                                                                       repr(user_friends[0].__len__()).decode("unicode_escape"),
                                                                                                       sleep2))
         time.sleep(sleep2)
         textfield.see('end')
     except Exception as e:
-        textfield.insert('end', 'Юзер № {} припинив роботу, причина : {} \n'.format(user[0], e.message))
+        textfield.insert('end', 'Юзер № {} прекратил работу, причина : {} \n'.format(user[0], e.message))
         textfield.see('end')
 # Перевіряємо чи не вимкнуто роботу бота
     if WORK == False:
@@ -52,27 +53,29 @@ def worker(user, textfield):
         # Відкриваємо профіль друга
         sleep3 = random.randrange(min, max)
         open_friend_profile = getUser(session=user_friends[1], id=uid)
-        textfield.insert('end', 'Юзер № {} відкрив профіль друга id= {}. Чекає {} секунд \n'.format(user[0],
+        textfield.insert('end', 'Юзер № {} открыл профиль друга id= {}. Ждет {} секунд \n'.format(user[0],
                                                                                                     uid,
                                                                                                     sleep3))
         #textfield.insert('end', repr(open_friend_profile).decode("unicode_escape"))
         textfield.see('end')
         time.sleep(sleep3)
 
-        #Витягуємо друзів друга
+        # Витягуємо друзів друга, якщо сторінка заблоковано то вертаємо 0 і йдемо до наступного
         friends_from_friend = getFriends(session=user_friends[1], id=uid)
-        textfield.insert('end', 'Юзер № {} зайшов до друзів друга id={}. Чекає {} секунд \n'.format(user[0],
+        if friends_from_friend == 0:
+            continue
+        textfield.insert('end', 'Юзер № {} зашел к друзьям друга id={}. Ждет {} секунд \n'.format(user[0],
                                                                                                     uid,
                                                                                                     sleep2))
         textfield.see('end')
         time.sleep(sleep2)
 
-        #Знаходимо людей яких у нас ще нема в друзях і віднімаємо тих кому вже відправляли запрос
+        # Знаходимо людей яких у нас ще нема в друзях і віднімаємо тих кому вже відправляли запит
         mutal_friends = getMutalFriends(session=user_friends[1], id=uid)
         sended_request = getRequests(session=user_friends[1])
         friends_without_mutal = set(friends_from_friend) - set(mutal_friends)
         no_friends_yet =  friends_without_mutal - set(sended_request)
-        textfield.insert('end', 'Юзер № {} знайшов {} не доданих друзів. Чекає {} секунд \n'.format(user[0],
+        textfield.insert('end', 'Юзер № {} нашел {} потенциальных друзей. Ждет {} секунд \n'.format(user[0],
                                                                                                     len(no_friends_yet),
                                                                                                     sleep))
         textfield.see('end')
@@ -89,12 +92,12 @@ def worker(user, textfield):
             send_and_max_request = database.sendRequest(user[0])
             if send_and_max_request[1] == send_and_max_request[0]:
                 textfield.insert('end',
-                                 'Юзер № {} припинив роботу. Відправлено макс к-сь запитів на день \n'.format(user[0]))
+                                 'Юзер № {} прекратил работу. Отправлено макс к-во запросов на день \n'.format(user[0]))
                 textfield.see('end')
                 raise Exception('Stop')
             # Відкриваємо профіль користувача
             open_user_profile = getUser(session=user_friends[1], id=no_friendID)
-            textfield.insert('end', 'Юзер № {} відкрив профіль не друга id={}. Чекає {} секунд \n'.format(user[0],
+            textfield.insert('end', 'Юзер № {} открыл профиль не друга id={}. Ждет {} секунд \n'.format(user[0],
                                                                                                           no_friendID,
                                                                                                           sleep2))
             # textfield.insert('end', repr(open_friend_profile).decode("unicode_escape"))
@@ -105,12 +108,15 @@ def worker(user, textfield):
             try:
                 # Перевіряємо чи користувач активний(тобто заходив у ВК протягом останніх 2х тижнів
                 if time.time() - open_user_profile[0]['last_seen']['time'] > 1210000:
-                    raise Exception('Користувач не заходив вже більше 2 тижнів')
-                # Перевіряємо чи є у нас більше трьох спільних юзерів, якщо є, то додаємо в друзі, якщо ні, то відкриваємо наступного
+                    raise Exception('Пользователь не заходил > 2 недель')
+                # Перевіряємо чи у користувача не більше друзів ніж дозволено у нас
+                if open_user_profile[0]['counters']['friends'] >= max_friends:
+                    raise Exception('У пользователя больше {} друзей'.format(max_friends))
+                # Перевіряємо чи є у нас більше мінімальної к-сті (min_mutal) спільних юзерів, якщо є, то додаємо в друзі, якщо ні, то відкриваємо наступного
                 mutal = getMutalFriends(session=user_friends[1], id=no_friendID)
                 sleep4 = random.randrange(min, max)
                 textfield.insert('end',
-                                 'Юзер № {} перевіряє чи є більше {} спільних друзів з id={}. Чекає {} секунд \n'.format(
+                                 'Юзер № {} проверяет есть ли > {} общих друзей з id={}. Ждет {} секунд \n'.format(
                                      user[0],
                                      min_mutal,
                                      no_friendID,
@@ -125,7 +131,7 @@ def worker(user, textfield):
                         try:
                             addToFriend(session=user_friends[1], id=no_friendID)
                             textfield.insert('end',
-                                                 'Юзер № {} відправив заявку в друзі юзеру id={}. Чекає {} секунд \n'.format(
+                                                 'Юзер № {} отправил запрос в друзья юзеру id={}. Ждет {} секунд \n'.format(
                                                      user[0],
                                                      no_friendID,
                                                      sleep))
@@ -135,12 +141,12 @@ def worker(user, textfield):
 
                         except Exception as e:
                             # ifCaptcha(e=e, session=user_friends[1], id=no_friendID)
-                            raise NameError('Потрібно ввести капчу')
+                            raise NameError('Нужно ввести капчу')
 
                     else:
-                        raise Exception('знайдено спільного друга з ботом зі списку')
+                        raise Exception('найдено общего друга с ботом в списке')
                 else:
-                    textfield.insert('end', 'Юзер № {} не знайшов {} спільних друзів з id={}. Чекає {} секунд \n'.format(user[0],
+                    textfield.insert('end', 'Юзер № {} не нашел {} общих друзей с id={}. Ждет {} секунд \n'.format(user[0],
                                                                                                                         min_mutal,
                                                                                                                         no_friendID,
                                                                                                                         sleep3))
@@ -149,10 +155,10 @@ def worker(user, textfield):
             except Exception as e:
                 if e.__class__ == NameError:
                 #if e.message == 'Потрібно ввести капчу':
-                    textfield.insert('end', 'Юзер № {} припинив роботу, причина: {} \n'.format(user[0], e.message))
+                    textfield.insert('end', 'Юзер № {} прекратил работу, причина: {} \n'.format(user[0], e.message))
                     textfield.see('end')
                     raise Exception
-                textfield.insert('end', 'Юзер № {} не додав в друзі, причина: {} \n'.format(user[0], e.message))
+                textfield.insert('end', 'Юзер № {} не додал в друзья, причина: {} \n'.format(user[0], e.message))
                 textfield.see('end')
 
 
@@ -169,7 +175,7 @@ def goWork(textfield):
         t = threading.Thread(target=worker, args=(i,textfield))
         t.start()
 
-    textfield.insert('end',"Всі потоки запущено, Faby почав працювати!\n")
+    textfield.insert('end',"Все потоки запущено, Faby начал работать!\n")
 
 
 # Метод на капчу (поки не імплементований. не потрібно імплементовувати)
