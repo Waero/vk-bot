@@ -53,7 +53,7 @@ def worker(user, textfield):
         # Відкриваємо профіль друга
         sleep3 = random.randrange(min, max)
         open_friend_profile = getUser(session=user_friends[1], id=uid)
-        textfield.insert('end', 'Юзер № {} открыл профиль друга id= {}. Ждет {} секунд \n'.format(user[0],
+        textfield.insert('end', 'Юзер № {} открыл профиль друга id={}. Ждет {} секунд \n'.format(user[0],
                                                                                                     uid,
                                                                                                     sleep3))
         #textfield.insert('end', repr(open_friend_profile).decode("unicode_escape"))

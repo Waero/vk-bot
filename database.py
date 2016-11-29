@@ -3,7 +3,8 @@
 import random
 import sqlite3 as db
 
-from datetime import date
+from datetime import date, datetime
+
 today = date(2013,11,1)
 c = db.connect(database="vkbot")
 cu = c.cursor()
@@ -85,3 +86,12 @@ def updateUserRequest(ID):
     query = "UPDATE users set send_request=0, request_day=? where ID=?"
     cur.execute(query, (date.today(), ID,))
     con.commit()
+
+# Оновлюємо к-сть відправлених заявок за сьогодні на 0, при старті програми, якщо юзер не відправляв сьогодні заявки
+c = db.connect(database="vkbot")
+cur = c.cursor()
+users = cur.execute("SELECT * FROM users;").fetchall()
+c.close()
+for i in users:
+    if datetime.strptime(i[7], '%Y-%m-%d').date() != date.today():
+        updateUserRequest(i[0])
