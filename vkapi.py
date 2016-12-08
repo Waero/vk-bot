@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import vk
-
+#import vk_api
 
 # Метод створює сесію і витягує друзів користувача
 def getFriendsAndSession(login, password):
@@ -16,16 +16,25 @@ def getFriendsAndSession(login, password):
 
 # Метод витягує id користувача
 def getVkId(login, password):
-    session = vk.AuthSession(scope='friends, offline', app_id='5677795', user_login=login, user_password=password)
+    session = vk.AuthSession(app_id='5677795', user_login=login, user_password=password)
     vkApi = vk.API(session)
     vk_id = vkApi.users.get()
     return vk_id
+    #vk_session = vk_api.VkApi(login, password)
+
+    #try:
+    #    vk_session.authorization()
+    #except vk_api.AuthorizationError as error_msg:
+    #    print(error_msg)
+    #    return
+
+    #vk = vk_session.get_api()
 
 
 # Метод витягує профіль юзера по ID
 def getUser(session,id):
     vkApi = vk.API(session)
-    u = vkApi.users.get(user_ids=id, fields='last_seen, counters')
+    u = vkApi.users.get(user_ids=id, fields='last_seen, counters, sex')
     return u
 
 

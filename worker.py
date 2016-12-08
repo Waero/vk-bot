@@ -24,6 +24,8 @@ def worker(user, textfield):
     max_friends = config.getint('main', 'max_friends')
     message = config.get('main', 'message')
     auto_answer = config.getint('main', 'auto_answer')
+    friend_sex = config.getint('main', 'friend_sex')
+
 
     # метод максимальних і відправлених реквестів
     requestPerDay(user)
@@ -45,9 +47,11 @@ def worker(user, textfield):
     except Exception as e:
         textfield.insert('end', 'Юзер № {} прекратил работу, причина : {} \n'.format(user[0], e.message))
         textfield.see('end')
+
 # Перевіряємо чи не вимкнуто роботу бота
     if WORK == False:
         raise Exception('Stop')
+
     # Проходимось по всіх друзях юзера і по його друзях. Основний код
     for uid in user_friends[0]:
         # Відкриваємо профіль друга
@@ -80,14 +84,18 @@ def worker(user, textfield):
                                                                                                     sleep))
         textfield.see('end')
         time.sleep(sleep)
+
         # Відкриваємо профіль юзера з людей яких у нас ще нема в друзях
         for no_friendID in no_friends_yet:
+
             # Перевіряємо чи не натиснута кнопка СТОП
             if WORK == False:
                 raise Exception('Stop')
+
             # Перевіряємо чи нема не прочитаних повідомлень, якщо є, то відправляємо стандартне повідомлення.
             if auto_answer == 1:
                 autoAnswerOnMessage(session=user_friends[1], message=message)
+
             # Перевіряємо чи не перебільшений ліміт на день
             send_and_max_request = database.sendRequest(user[0])
             if send_and_max_request[1] == send_and_max_request[0]:
@@ -95,6 +103,7 @@ def worker(user, textfield):
                                  'Юзер № {} прекратил работу. Отправлено макс к-во запросов на день \n'.format(user[0]))
                 textfield.see('end')
                 raise Exception('Stop')
+
             # Відкриваємо профіль користувача
             open_user_profile = getUser(session=user_friends[1], id=no_friendID)
             textfield.insert('end', 'Юзер № {} открыл профиль не друга id={}. Ждет {} секунд \n'.format(user[0],
@@ -106,12 +115,20 @@ def worker(user, textfield):
 
             # Якщо сторінка друга видалена то vk вертає error. Тут його ловимо і виводимо
             try:
-                # Перевіряємо чи користувач активний(тобто заходив у ВК протягом останніх 2х тижнів
+                # Перевіряємо чи користувач активний (тобто заходив у ВК протягом останніх 2х тижнів)
                 if time.time() - open_user_profile[0]['last_seen']['time'] > 1210000:
                     raise Exception('Пользователь не заходил > 2 недель')
+
                 # Перевіряємо чи у користувача не більше друзів ніж дозволено у нас
                 if open_user_profile[0]['counters']['friends'] >= max_friends:
-                    raise Exception('У пользователя больше {} друзей'.format(max_friends))
+                    raise Exception('У пользователя > {} друзей'.format(max_friends))
+
+                # Перевіряємо чи користувач потрібної нам статі
+                if open_user_profile[0]['sex'] == friend_sex or friend_sex == 3:
+                    pass
+                else:
+                    raise Exception('Пол пользователь не подходит')
+
                 # Перевіряємо чи є у нас більше мінімальної к-сті (min_mutal) спільних юзерів, якщо є, то додаємо в друзі, якщо ні, то відкриваємо наступного
                 mutal = getMutalFriends(session=user_friends[1], id=no_friendID)
                 sleep4 = random.randrange(min, max)
@@ -140,7 +157,6 @@ def worker(user, textfield):
                             time.sleep(sleep)
 
                         except Exception as e:
-                            # ifCaptcha(e=e, session=user_friends[1], id=no_friendID)
                             raise NameError('Нужно ввести капчу')
 
                     else:
@@ -179,12 +195,12 @@ def goWork(textfield):
 
 
 # Метод на капчу (поки не імплементований. не потрібно імплементовувати)
-def ifCaptcha(e, session, id):
-    e.captcha_img
-    config = SafeConfigParser()
-    config.read('config.ini')
-    key = config.get('main', 'key')
-    addToFriendCaptcha(session=session, id=id, captcha_sid=e.captcha_sid, captcha_key=key)
+#def ifCaptcha(e, session, id):
+#    e.captcha_img
+#    config = SafeConfigParser()
+#    config.read('config.ini')
+#    key = config.get('main', 'key')
+#    addToFriendCaptcha(session=session, id=id, captcha_sid=e.captcha_sid, captcha_key=key)
 
 
 # Метод к-сті запросів за день, а також максимальної к-сті
