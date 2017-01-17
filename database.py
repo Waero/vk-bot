@@ -20,7 +20,43 @@ try:
             vk_id INTEGER,
             request_day DATE DEFAULT '2013-11-1',
             all_send_request INTEGER DEFAULT 0,
-            name VARCHAR
+            name VARCHAR,
+            main_page BOOLEAN DEFAULT 0
+            );
+    """)
+except db.DatabaseError, x:
+    print "DB Error: ", x
+c.commit()
+c.close()
+
+# Створюємо таблицю статистики, якщо вона вже є то просто йдемо далі
+c = db.connect(database="vkbot")
+cu = c.cursor()
+try:
+    cu.execute("""
+          CREATE TABLE statistics (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            bot_name VARCHAR,
+            type VARCHAR,
+            send_at DATE DEFAULT '2013-11-1'
+            );
+    """)
+except db.DatabaseError, x:
+    print "DB Error: ", x
+c.commit()
+c.close()
+
+
+# Створюємо таблицю завдань для копіювання, якщо вона вже є то просто йдемо далі
+c = db.connect(database="vkbot")
+cu = c.cursor()
+try:
+    cu.execute("""
+          CREATE TABLE tasks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            bot_id INTEGER,
+            text VARCHAR,
+            attachments TEXT
             );
     """)
 except db.DatabaseError, x:
@@ -86,6 +122,16 @@ def updateUserRequest(ID):
     query = "UPDATE users set send_request=0, request_day=? where ID=?"
     cur.execute(query, (date.today(), ID,))
     con.commit()
+
+# Метод додавання в статистику
+def addToStatistics(bot_name, type):
+    con = db.connect(database="vkbot")
+    cur = con.cursor()
+    cur.execute("insert into statistics (bot_name, type, send_at) values (?, ?, ?)",
+                (bot_name, type, datetime.now(),))
+
+    con.commit()
+
 
 # Оновлюємо к-сть відправлених заявок за сьогодні на 0, при старті програми, якщо юзер не відправляв сьогодні заявки
 c = db.connect(database="vkbot")

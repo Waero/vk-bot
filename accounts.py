@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import Tkinter as tk
+from ConfigParser import SafeConfigParser
 from PIL import Image, ImageTk
 import sqlite3 as db
 
@@ -75,9 +76,12 @@ class Accounts:
         tk.Label(self.listFrame,  text='Аккаунт', bg='#e6e6e6').grid(row=4, column=1, padx=15, sticky='w')
         tk.Label(self.listFrame, text='Работать?', bg='#e6e6e6').grid(row=4, column=2, padx=15, sticky='w')
         tk.Label(self.listFrame, text='Опции', bg='#e6e6e6').grid(row=4, column=3, columnspan=2, padx=15)
+        tk.Label(self.listFrame, text='Главная', bg='#e6e6e6').grid(row=4, column=5, columnspan=1, padx=15)
         tk.Label(self.listFrame, text='  ', bg='#e6e6e6').grid(row=5, column=0, sticky='w')
 
         # Тут формуємо таблицю з усіх юзерів що є у базі
+        self.main_page = tk.IntVar()
+
         for i in cur.execute("SELECT * FROM users;"):
             tk.Label(self.listFrame, text=str(i[0]), bg='#e6e6e6').grid(row=self.id, column=0, padx=15, sticky='w')
             tk.Label(self.listFrame, text=i[9], bg='#e6e6e6').grid(row=self.id, column=1, padx=15, sticky='w')
@@ -85,7 +89,7 @@ class Accounts:
                 image = self.work_btn_on
                 text = 'Yes'
             else:
-                image =  self.work_btn_off
+                image = self.work_btn_off
                 text = 'No'
             but = tk.Button(self.listFrame, image=image, text=text, bg='#e6e6e6', borderwidth=0, highlightthickness=0)
             but.grid(row=self.id, column=2, padx=15)
@@ -102,6 +106,13 @@ class Accounts:
             delete_btn.bind("<Leave>", lambda event, h=delete_btn: h.configure(image=self.delete_btn_off))
             delete_btn.grid(row=self.id, column=4, padx=15, sticky='we')
             delete_btn.bind("<Button-1>", lambda event, uid=str(i[0]), but=but: self.deleteUser(uid=uid))
+        # Radiobutton для головної сторінки
+            tk.Radiobutton(self.listFrame, variable=self.main_page, value=i[0], borderwidth=0, bg='#e6e6e6',
+                           highlightthickness=0, command=self.markAsMainPage).grid(row=self.id, column=5, padx=15,
+                                                                                   sticky='we')
+            if i[10] == 1:
+                self.main_page.set(i[0])
+
             self.id = self.id+1
 
     def change(self, event, uid, but):
@@ -134,7 +145,8 @@ class Accounts:
         vk_id = vkapi.getVkId(login=login, password=password)
         uname = vk_id[0]['first_name'] + ' ' + vk_id[0]['last_name']
         # This is the qmark style:
-        cur.execute("insert into users (login, password, vk_id, name) values (?, ?, ?, ?)", (login, password, vk_id[0]['uid'], uname))
+        cur.execute("insert into users (login, password, vk_id, name) values (?, ?, ?, ?)",
+                    (login, password, vk_id[0]['uid'], uname))
         con.commit()
         lastList = cur.execute("SELECT * FROM users ORDER BY id DESC LIMIT 1")
 
@@ -165,7 +177,33 @@ class Accounts:
             delete_btn.bind("<Leave>", lambda event, h=delete_btn: h.configure(image=self.delete_btn_off))
             delete_btn.grid(row=self.id, column=4, padx=15, sticky='w')
             delete_btn.bind("<Button-1>", lambda event, uid=str(i[0]), but=but: self.deleteUser(uid=uid))
+            tk.Radiobutton(self.listFrame, variable=self.main_page, value=i[0], borderwidth=0, bg='#e6e6e6',
+                           highlightthickness=0, command=self.markAsMainPage).grid(row=self.id, column=5, padx=15,
+                                                                                   sticky='we')
             self.id = self.id+1
+        con.close()
+
+
+    def markAsMainPage(self):
+        # Cпочатку ставимо всім сторінкам False, потім присвоюємо True сторінці яку вибрав юзер
+        con = db.connect(database="vkbot")
+        cur = con.cursor()
+        query = "UPDATE users set main_page=?"
+        cur.execute(query, (0,))
+        con.commit()
+        query2 = "UPDATE users set main_page=? where id=?"
+        cur.execute(query2, (1, self.main_page.get()))
+        con.commit()
+        # Витягуємо юзера щоб потім витягнути з вк дату останнього посту
+        user = cur.execute("SELECT login, password From users where id=?;", (self.main_page.get(),)).fetchone()
+        con.commit()
+        date = vkapi.getLastPostDate(user[0], user[1])
+        # Зберігаємо дату останнього посту в конфіг файл
+        config = SafeConfigParser()
+        config.read('config.ini')
+        config.set('post', 'date', str(date))
+        with open('config.ini', 'w') as f:
+            config.write(f)
         con.close()
 
 

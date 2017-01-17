@@ -6,7 +6,7 @@ import vk
 
 # Метод створює сесію і витягує друзів користувача
 def getFriendsAndSession(login, password):
-    session = vk.AuthSession(scope='friends, messages, offline', app_id='5677795', user_login=login, user_password=password)
+    session = vk.AuthSession(scope='friends, messages, wall, offline', app_id='5677795', user_login=login, user_password=password)
     vkApi = vk.API(session)
     uf = vkApi.friends.get(order='hints')
     # uf - cписок всіх друзів
@@ -86,4 +86,30 @@ def getMessages(session):
 # Метод відправки повідомлення для авто-ответа
 def sendMessage(session, f_id, message):
     vkApi = vk.API(session, v='5.60')
-    send_messages = vkApi.messages.send(user_id=f_id, message=message)
+    vkApi.messages.send(user_id=f_id, message=message)
+
+
+# Отримуємо дату останнього посту на стіні
+def getLastPost(session):
+    vkApi = vk.API(session, v='5.62')
+    post = vkApi.wall.get(count=1, filter='owner')
+    return post
+
+
+# Постимо на стіні сторінки
+def postOnWall(session, task):
+    vkApi = vk.API(session, v='5.62')
+    post = vkApi.wall.post(message=task[2], attachments=task[3])
+    return post
+
+
+# Метод для витягнення дати останнього посту коли вибираємо головну сторінку
+def getLastPostDate(login, password):
+    session = vk.AuthSession(app_id='5677795', user_login=login, user_password=password)
+    vkApi = vk.API(session, v='5.62')
+    date = vkApi.wall.get(count=1, filter='owner')
+    return date['items'][0]['date']
+
+
+
+

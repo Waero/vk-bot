@@ -15,7 +15,7 @@ WORK = True
 
 
 def worker(user, textfield):
-    # Витягуємо в змінні max i min значення для рандому, а також мін спільних друзів
+    # Витягуємо в змінні max i min значення для рандому, а також інші настройки з config.ini
     config = SafeConfigParser()
     config.read('config.ini')
     max = config.getint('main', 'max')
@@ -25,6 +25,7 @@ def worker(user, textfield):
     message = config.get('main', 'message')
     auto_answer = config.getint('main', 'auto_answer')
     friend_sex = config.getint('main', 'friend_sex')
+    auto_post = config.getint('main', 'auto_post')
 
 
     # метод максимальних і відправлених реквестів
@@ -94,7 +95,11 @@ def worker(user, textfield):
 
             # Перевіряємо чи нема не прочитаних повідомлень, якщо є, то відправляємо стандартне повідомлення.
             if auto_answer == 1:
-                autoAnswerOnMessage(session=user_friends[1], message=message)
+                autoAnswerOnMessage(session=user_friends[1], message=message, user_name=user[9])
+
+            # Перевіряємо чи не потрібно постити на стіну, якщо так, то виконуємо метод постингу.
+            if auto_post == 1:
+                checkIfNeedCopy(session=user_friends[1], user=user)
 
             # Перевіряємо чи не перебільшений ліміт на день
             send_and_max_request = database.sendRequest(user[0])
@@ -154,6 +159,7 @@ def worker(user, textfield):
                                                      sleep))
                             database.sendRequestCount(user[0])  # Додаємо в каунтер +1
                             textfield.see('end')
+                            database.addToStatistics(user[9], 'friend')  # Додаємо в статистику
                             time.sleep(sleep)
 
                         except Exception as e:
@@ -212,8 +218,57 @@ def requestPerDay(user):
 
 
 # Метод автоматичної відповіді на повідомлення
-def autoAnswerOnMessage(session, message):
+def autoAnswerOnMessage(session, message, user_name):
     new_messages = getMessages(session)
     if new_messages['count'] != 0:
         for i in new_messages['items']:
             sendMessage(session=session, f_id=i['message']['user_id'], message=message)
+            database.addToStatistics(user_name, 'message')  # Додаємо в статистику
+
+
+# Мотод для копіювання постів
+def checkIfNeedCopy(session, user):
+
+    config = SafeConfigParser()
+    config.read('config.ini')
+    post_date = config.getint('post', 'date')
+
+    # Метод ділиться на дві частини спочатку дивимось, якщо це головна сторінка то виконуємо перший блок, якщо не головна то другий
+    # ----- Логіка для головної сторінки -----:
+    # В конфіг ми записали дату останнього посту, тут ми перевіряємо чи не зявився новий пост,
+    # Якщо зявився то формуємо нові задачі для інших сторінок ботів, щоб вони потім зробили пост.
+    # ----- Логіка для інших сторінок ботів -----:
+    # Перевіряємо чи є у базі завдання на пост, якщо є то постимо.
+
+    if user[10] == 1:
+        post = getLastPost(session)
+        if post['items'][0]['date'] > post_date:
+
+            attachments = ''
+            for p in post['items'][0]['attachments']:
+                attachments = attachments + 'photo' + str(p['photo']['owner_id']) + '_' + str(p['photo']['id']) + ','
+
+            # Збарігаємо нове значення дати останнього посту в конфіг файл
+            config.set('post', 'date', str(post['items'][0]['date']))
+            with open('config.ini', 'w') as f:
+                config.write(f)
+
+            # Створюємо завдання в базі даних для інших ботів щоб вони зробили пости
+            con = db.connect(database="vkbot")
+            cur = con.cursor()
+            users = cur.execute("SELECT * FROM users WHERE start_work=0;").fetchall()
+            for u in users:
+                if u[0] != user[0]: # Щоб не створити завдання основній сторінці
+                    cur.execute("insert into tasks (bot_id, text, attachments) values (?, ?, ?)",
+                                (u[0], post['items'][0]['text'], attachments))
+                    con.commit()
+    else:
+        con = db.connect(database="vkbot")
+        cur = con.cursor()
+        task_for_user = (cur.execute("SELECT * FROM tasks WHERE bot_id=?;",(user[0],))).fetchall()
+        for task in task_for_user:
+            postOnWall(session, task)
+            # Видаляємо завдання після посту, щоб бот потім знову це не запостив
+            cur.execute("DELETE FROM tasks WHERE id=?;", (task[0],))
+            con.commit()
+            database.addToStatistics(user[9], 'post')  # Додаємо в статистику

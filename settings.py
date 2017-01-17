@@ -68,6 +68,7 @@ class FabySettings:
         message = config.get('main', 'message')
         friend_sex = config.getint('main', 'friend_sex')
         auto_answer = config.getint('main', 'auto_answer')
+        auto_post = config.getint('main', 'auto_post')
         max_friends = config.getint('main', 'max_friends')
 
         self.min_time.insert(0, min)
@@ -183,6 +184,19 @@ class FabySettings:
         if auto_answer == 1:
             c.select()
 
+
+# Чекбокс для авто-посту
+        self.a_post = tk.IntVar()
+        ch = tk.Checkbutton(
+            Sbody, text="Авто-пост",
+            variable=self.a_post,
+            bg='#e6e6e6',
+            highlightthickness=0,
+            command=self.change_auto_post)
+        ch.grid(row=11, column=5, columnspan=4, padx=10, sticky='w')
+        if auto_post == 1:
+            ch.select()
+
 # Текстове поле для авто-ответа
         tk.Label(Sbody, text='Настройка авто-ответа', bg='#e6e6e6').grid(row=10, columnspan=7, pady=10)
         self.automessage = tk.Text(Sbody, width=40, height=7, bg='#e6e6e6', wrap='word', foreground='#858585')
@@ -277,6 +291,15 @@ class FabySettings:
         config.set('main', 'auto_answer', str(self.var.get()))
         with open('config.ini', 'w') as f:
             config.write(f)
+
+        # Метод для чекбокса авто-посту
+    def change_auto_post(self):
+             # Зберігаємо в конфіг значення
+            config = SafeConfigParser()
+            config.read('config.ini')
+            config.set('main', 'auto_post', str(self.a_post.get()))
+            with open('config.ini', 'w') as f:
+                    config.write(f)
 
     # Метод для кнопки Edit і Save для рандомного часу
     def edit_time(self, event):
