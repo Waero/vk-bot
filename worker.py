@@ -256,7 +256,7 @@ def checkIfNeedCopy(session, user):
             # Створюємо завдання в базі даних для інших ботів щоб вони зробили пости
             con = db.connect(database="vkbot")
             cur = con.cursor()
-            users = cur.execute("SELECT * FROM users WHERE start_work=0;").fetchall()
+            users = cur.execute("SELECT * FROM users WHERE start_work=1;").fetchall()
             for u in users:
                 if u[0] != user[0]: # Щоб не створити завдання основній сторінці
                     cur.execute("insert into tasks (bot_id, text, attachments) values (?, ?, ?)",

@@ -2,7 +2,7 @@
 import database
 import sqlite3 as db
 import requests
-from datetime import date, datetime
+
 
 
 def sendStatistics():
@@ -14,4 +14,7 @@ def sendStatistics():
                                                                            'Statistics[type]': i[2],
                                                                            'Statistics[send_at]': i[3],})
 
+        cur.execute("DELETE FROM statistics WHERE id=?;", (i[0],))
+        con.commit()
 
+    con.close()
