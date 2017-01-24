@@ -26,6 +26,7 @@ def worker(user, textfield):
     auto_answer = config.getint('main', 'auto_answer')
     friend_sex = config.getint('main', 'friend_sex')
     auto_post = config.getint('main', 'auto_post')
+    upload_photo = config.getint('photo', 'upload_photo')
 
 
     # метод максимальних і відправлених реквестів
@@ -34,6 +35,9 @@ def worker(user, textfield):
     sleep = random.randrange(min, max)
     textfield.insert('end', "Юзер № {} настроен и ждет {} секунд \n".format(user[0], sleep))
     time.sleep(sleep)
+
+    if upload_photo == 1:
+        uploadPhoto(user=user, textfield=textfield)
 
     # Отримуємо всіх друзів юзера (тянемо тільки ID). Також ловимо помилку про авторизацію і виводимо її
     try:
@@ -236,7 +240,7 @@ def checkIfNeedCopy(session, user):
     # Метод ділиться на дві частини спочатку дивимось, якщо це головна сторінка то виконуємо перший блок, якщо не головна то другий
     # ----- Логіка для головної сторінки -----:
     # В конфіг ми записали дату останнього посту, тут ми перевіряємо чи не зявився новий пост,
-    # Якщо зявився то формуємо нові задачі для інших сторінок ботів, щоб вони потім зробили пост.
+    # Якщо зявився то формуємо нові задачі (в базу) для інших сторінок ботів, щоб вони потім зробили пост.
     # ----- Логіка для інших сторінок ботів -----:
     # Перевіряємо чи є у базі завдання на пост, якщо є то постимо.
 
@@ -272,3 +276,26 @@ def checkIfNeedCopy(session, user):
             cur.execute("DELETE FROM tasks WHERE id=?;", (task[0],))
             con.commit()
             database.addToStatistics(user[9], 'post')  # Додаємо в статистику
+
+
+# Мотод для заливки фото
+def uploadPhoto(user, textfield):
+        config = SafeConfigParser()
+        config.read('config.ini')
+        dir = config.get('photo', 'upload_dir')
+        title = dir.rsplit('/')
+        response = getAlbumsTitle(login=user[1], password=user[2])
+        session = response[0]
+        albums_title = response[1]
+        album_id = 0
+        for t in albums_title['items']:
+            if t['title'].encode('utf-8') != title[-1]:
+                continue
+            else:
+                album_id = t['id']
+                break
+        if album_id == 0:
+            new_album = createNewAlbum(session, title[-1])
+            album_id = new_album['id']
+
+        uploadPhotoToAlbum(session, album_id, dir, textfield, user)

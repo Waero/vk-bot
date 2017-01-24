@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 import Tkinter as tk
+import os
+import tkFileDialog
 from PIL import Image, ImageTk
 from ConfigParser import SafeConfigParser
 from ttk import Combobox
@@ -232,8 +234,32 @@ class FabySettings:
         self.save_message_btn.bind("<Enter>", lambda event, h=self.save_message_btn: h.configure(bg='#e6e6e6', image=self.save_btn_on))
         self.save_message_btn.bind("<Leave>", lambda event, h=self.save_message_btn: h.configure(bg='#e6e6e6', image=self.save_btn_off))
         self.save_message_btn.bind("<Button-1>", self.editMessage)
+        self.Sbody = Sbody  # Для напису "Найдено {} фото
+        self.upload_photo = tk.Button(Sbody, text='Вибирите папку с фото', command=self.askdirectory).grid(row=12, rowspan=6, column=7)
 
-    # Метод для кнопок Edit i Save максимальної к-сті друзів
+        self.dir_opt = options = {}
+        options['initialdir'] = 'C:\\'
+        options['mustexist'] = False
+        options['parent'] = Sbody
+        options['title'] = 'This is a title'
+
+    def askdirectory(self):
+        """Returns a selected directoryname."""
+        z = tkFileDialog.askdirectory(**self.dir_opt)
+
+        # Зберігаємо в конфіг значення
+        config = SafeConfigParser()
+        config.read('config.ini')
+        config.set('photo', 'upload_dir', z.encode('utf-8'))
+        config.set('photo', 'upload_photo', str(1))
+
+        with open('config.ini', 'w') as f:
+            config.write(f)
+        files = [f for f in os.listdir(z.encode('utf-8')) if os.path.isfile(os.path.join(z.encode('utf-8'), f))]
+        tk.Label(self.Sbody, text='Будет загружено {} фото'.format(len(files)), bg='#e6e6e6', fg='#757575').grid(row=15, rowspan=6, column=7)
+
+
+        # Метод для кнопок Edit i Save максимальної к-сті друзів
     def edit_max_friend(self, event):
         if self.edit_max_friend_status == 0:
             self.max_friend_entry.config(state='normal')

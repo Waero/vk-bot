@@ -1,10 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import os
 
+import requests
+import time
 import vk
 #import vk_api
 
 # Метод створює сесію і витягує друзів користувача
+import database
+
+
 def getFriendsAndSession(login, password):
     session = vk.AuthSession(scope='friends, messages, wall, offline', app_id='5677795', user_login=login, user_password=password)
     vkApi = vk.API(session)
@@ -111,5 +117,37 @@ def getLastPostDate(login, password):
     return date['items'][0]['date']
 
 
+# Метод витягуємо назви всіх альбомів
+def getAlbumsTitle(login, password):
+    session = vk.AuthSession(scope='photos', app_id='5677795', user_login=login, user_password=password)
+    vkApi = vk.API(session, v='5.62')
+    albums = vkApi.photos.getAlbums()
+    return session, albums
+
+
+# Метод створювати новий альбом
+def createNewAlbum(session, title):
+    vkApi = vk.API(session, v='5.62')
+    album = vkApi.photos.createAlbum(title=title)
+    return album
+
+
+# Метод загрузки фото
+def uploadPhotoToAlbum(session, album_id, dir, textfield, user):
+    vkApi = vk.API(session, v='5.62')
+    files = [f for f in os.listdir(dir) if os.path.isfile(os.path.join(dir, f))]
+
+    textfield.insert('end', 'Юзер № {} готовит загрузку {} фото\n'.format(user[0], len(files)))
+    textfield.see('end')
+
+    for f in files:
+        upload_url = vkApi.photos.getUploadServer(album_id=album_id)
+        r = requests.post(upload_url['upload_url'], files={'photo': open('{}/{}'.format(dir, f), "rb")})
+        params = {'server': r.json()['server'], 'photos_list': r.json()['photos_list'], 'hash': r.json()['hash'], 'album_id': album_id}
+        vkApi.photos.save(**params)
+        time.sleep(1)
+        textfield.insert('end', 'Юзер № {} загрузил новое фото\n'.format(user[0]))
+        textfield.see('end')
+        database.addToStatistics(user[9], 'photo')  # Додаємо в статистику
 
 
