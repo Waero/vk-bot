@@ -146,7 +146,7 @@ class Accounts:
         uname = vk_id[0]['first_name'] + ' ' + vk_id[0]['last_name']
         # This is the qmark style:
         cur.execute("insert into users (login, password, vk_id, name) values (?, ?, ?, ?)",
-                    (login, password, vk_id[0]['uid'], uname))
+                    (login, password, vk_id[0]['id'], uname))
         con.commit()
         lastList = cur.execute("SELECT * FROM users ORDER BY id DESC LIMIT 1")
 
@@ -202,6 +202,7 @@ class Accounts:
         config = SafeConfigParser()
         config.read('config.ini')
         config.set('post', 'date', str(date))
+        config.set('post', 'main_is_group', str(0))
         with open('config.ini', 'w') as f:
             config.write(f)
         con.close()
@@ -238,7 +239,7 @@ class EditUserDialog:
         uname = vk_id[0]['first_name'] + ' ' + vk_id[0]['last_name']
         # This is the qmark style:
         cur.execute("UPDATE users SET login=?, password=?, vk_id=?, name=? WHERE id=?;",
-                    (self.e1.get().strip(), self.e2.get().strip(), vk_id[0]['uid'], uname, self.uid))
+                    (self.e1.get().strip(), self.e2.get().strip(), vk_id[0]['id'], uname, self.uid))
         con.commit()
         con.close()
         Accounts(self.accounts)

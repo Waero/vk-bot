@@ -43,9 +43,9 @@ def worker(user, textfield):
     try:
         sleep2 = random.randrange(min, max)
         user_friends = getFriendsAndSession(login=user[1], password=user[2])
-        #random.shuffle(user_friends[0])  # Перемішуємо друзів, щоб не проходитись завжди від початку списку
+        #random.shuffle(user_friends[0]['items'])  # Перемішуємо друзів, щоб не проходитись завжди від початку списку
         textfield.insert('end', 'Юзер № {} зашел к друзьям у него их {}. Ждет {} секунд \n'.format(user[0],
-                                                                                                      repr(user_friends[0].__len__()).decode("unicode_escape"),
+                                                                                                      str(user_friends[0]['count']),
                                                                                                       sleep2))
         time.sleep(sleep2)
         textfield.see('end')
@@ -58,7 +58,8 @@ def worker(user, textfield):
         raise Exception('Stop')
 
     # Проходимось по всіх друзях юзера і по його друзях. Основний код
-    for uid in user_friends[0]:
+    for uid in user_friends[0]['items']:
+        if uid in bots_id: continue # Щоб не відкрити профіль бота!
         # Відкриваємо профіль друга
         sleep3 = random.randrange(min, max)
         open_friend_profile = getUser(session=user_friends[1], id=uid)
@@ -71,8 +72,7 @@ def worker(user, textfield):
 
         # Витягуємо друзів друга, якщо сторінка заблоковано то вертаємо 0 і йдемо до наступного
         friends_from_friend = getFriends(session=user_friends[1], id=uid)
-        if friends_from_friend == 0:
-            continue
+        if friends_from_friend == 0: continue
         textfield.insert('end', 'Юзер № {} зашел к друзьям друга id={}. Ждет {} секунд \n'.format(user[0],
                                                                                                     uid,
                                                                                                     sleep2))
@@ -82,7 +82,7 @@ def worker(user, textfield):
         # Знаходимо людей яких у нас ще нема в друзях і віднімаємо тих кому вже відправляли запит
         mutal_friends = getMutalFriends(session=user_friends[1], id=uid)
         sended_request = getRequests(session=user_friends[1])
-        friends_without_mutal = set(friends_from_friend) - set(mutal_friends)
+        friends_without_mutal = set(friends_from_friend['items']) - set(mutal_friends)
         no_friends_yet =  friends_without_mutal - set(sended_request)
         textfield.insert('end', 'Юзер № {} нашел {} потенциальных друзей. Ждет {} секунд \n'.format(user[0],
                                                                                                     len(no_friends_yet),
@@ -196,10 +196,12 @@ bots_id = []
 def goWork(textfield):
     con = db.connect(database="vkbot")
     cur = con.cursor()
-    for i in cur.execute("SELECT * FROM users WHERE start_work=1;"):
+    for i in cur.execute("SELECT * FROM users;"):
+        # Переробити щоб всіх не дода
         bots_id.append(i[6])
-        t = threading.Thread(target=worker, args=(i,textfield))
-        t.start()
+        if i[5] == 1:
+            t = threading.Thread(target=worker, args=(i,textfield))
+            t.start()
 
     textfield.insert('end',"Все потоки запущено, Faby начал работать!\n")
 
@@ -236,16 +238,23 @@ def checkIfNeedCopy(session, user):
     config = SafeConfigParser()
     config.read('config.ini')
     post_date = config.getint('post', 'date')
+    main_is_group = config.get('post', 'main_is_group')
 
-    # Метод ділиться на дві частини спочатку дивимось, якщо це головна сторінка то виконуємо перший блок, якщо не головна то другий
+    # Метод ділиться на дві частини спочатку дивимось,
+    # якщо це головна сторінка або група є головною то виконуємо перший блок, якщо не головна то другий
     # ----- Логіка для головної сторінки -----:
     # В конфіг ми записали дату останнього посту, тут ми перевіряємо чи не зявився новий пост,
     # Якщо зявився то формуємо нові задачі (в базу) для інших сторінок ботів, щоб вони потім зробили пост.
-    # ----- Логіка для інших сторінок ботів -----:
+    # ----- Логіка для інших сторінок ботів (user[10] == 0) -----:
     # Перевіряємо чи є у базі завдання на пост, якщо є то постимо.
 
-    if user[10] == 1:
-        post = getLastPost(session)
+    if user[10] == 1 or main_is_group != 0:
+        if user[10] == 1:
+            owner_id = user[5]
+        else:
+            owner_id = '-'+str(main_is_group)
+
+        post = getLastPost(session, owner_id)
         if post['items'][0]['date'] > post_date:
 
             attachments = ''
@@ -262,11 +271,12 @@ def checkIfNeedCopy(session, user):
             cur = con.cursor()
             users = cur.execute("SELECT * FROM users WHERE start_work=1;").fetchall()
             for u in users:
-                if u[0] != user[0]: # Щоб не створити завдання основній сторінці
+                if u[10] == 0: # Щоб створити завдання всім крім основної сторінки
                     cur.execute("insert into tasks (bot_id, text, attachments) values (?, ?, ?)",
                                 (u[0], post['items'][0]['text'], attachments))
                     con.commit()
-    else:
+
+    if user[10] == 0:
         con = db.connect(database="vkbot")
         cur = con.cursor()
         task_for_user = (cur.execute("SELECT * FROM tasks WHERE bot_id=?;",(user[0],))).fetchall()
@@ -280,6 +290,10 @@ def checkIfNeedCopy(session, user):
 
 # Мотод для заливки фото
 def uploadPhoto(user, textfield):
+             # ----------Логіка--------------#
+    # Беремо назву папки яку вибрав юзер, перевіряємо чи є такий альбом у сторінки
+    # Якщо нема то сторюємо новий альбом і заливаємо фото
+
         config = SafeConfigParser()
         config.read('config.ini')
         dir = config.get('photo', 'upload_dir')

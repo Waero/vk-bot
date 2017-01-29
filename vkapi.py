@@ -5,15 +5,13 @@ import os
 import requests
 import time
 import vk
-#import vk_api
-
-# Метод створює сесію і витягує друзів користувача
 import database
 
 
+# Метод створює сесію і витягує друзів користувача
 def getFriendsAndSession(login, password):
-    session = vk.AuthSession(scope='friends, messages, wall, offline', app_id='5677795', user_login=login, user_password=password)
-    vkApi = vk.API(session)
+    session = vk.AuthSession(scope='friends, messages, wall, photos', app_id='5677795', user_login=login, user_password=password)
+    vkApi = vk.API(session, v='5.62')
     uf = vkApi.friends.get(order='hints')
     # uf - cписок всіх друзів
     # session - Сесія юзера
@@ -23,30 +21,21 @@ def getFriendsAndSession(login, password):
 # Метод витягує id користувача
 def getVkId(login, password):
     session = vk.AuthSession(app_id='5677795', user_login=login, user_password=password)
-    vkApi = vk.API(session)
+    vkApi = vk.API(session, v='5.62')
     vk_id = vkApi.users.get()
     return vk_id
-    #vk_session = vk_api.VkApi(login, password)
-
-    #try:
-    #    vk_session.authorization()
-    #except vk_api.AuthorizationError as error_msg:
-    #    print(error_msg)
-    #    return
-
-    #vk = vk_session.get_api()
 
 
 # Метод витягує профіль юзера по ID
 def getUser(session,id):
-    vkApi = vk.API(session)
+    vkApi = vk.API(session, v='5.62')
     u = vkApi.users.get(user_ids=id, fields='last_seen, counters, sex')
     return u
 
 
 # Метод витягує друзів друга по ID, якщо сторінка заблокована то вертаємо 0
 def getFriends(session, id):
-    vkApi = vk.API(session)
+    vkApi = vk.API(session, v='5.62')
     try:
         u = vkApi.friends.get(user_id=id, order='hints')
     except Exception as e:
@@ -57,48 +46,48 @@ def getFriends(session, id):
 
 # Метод витягує спільних друзів карент юзера і юзера (ID)
 def getMutalFriends(session, id):
-    vkApi = vk.API(session)
+    vkApi = vk.API(session, v='5.62')
     mutal_friends = vkApi.friends.getMutual(target_uid=id)
     return mutal_friends
 
 
 # Метод відправляємо заявку в друзі (ID)
 def addToFriend(session, id):
-    vkApi = vk.API(session)
+    vkApi = vk.API(session, v='5.62')
     added_friend = vkApi.friends.add(user_id=id)
     return added_friend
 
 
 def addToFriendCaptcha(session, id, captcha_sid, captcha_key):
-    vkApi = vk.API(session)
+    vkApi = vk.API(session, v='5.62')
     added_friend = vkApi.friends.add(user_id=id, captcha_sid=captcha_sid, captcha_key=captcha_key)
     return added_friend
 
 
 # Метод витягує кому вже відправлялись заявки
 def getRequests(session):
-    vkApi = vk.API(session)
+    vkApi = vk.API(session, v='5.62')
     sended_request = vkApi.friends.getRequests(out=1)
     return sended_request
 
 
 # Метод витягує нові повідомлення
 def getMessages(session):
-    vkApi = vk.API(session, v='5.60')
+    vkApi = vk.API(session, v='5.62')
     new_messages = vkApi.messages.getDialogs(unread=1)
     return new_messages
 
 
 # Метод відправки повідомлення для авто-ответа
 def sendMessage(session, f_id, message):
-    vkApi = vk.API(session, v='5.60')
+    vkApi = vk.API(session, v='5.62')
     vkApi.messages.send(user_id=f_id, message=message)
 
 
 # Отримуємо дату останнього посту на стіні
-def getLastPost(session):
+def getLastPost(session, owner_id):
     vkApi = vk.API(session, v='5.62')
-    post = vkApi.wall.get(count=1, filter='owner')
+    post = vkApi.wall.get(count=1, filter='owner', owner_id=owner_id)
     return post
 
 
@@ -115,6 +104,22 @@ def getLastPostDate(login, password):
     vkApi = vk.API(session, v='5.62')
     date = vkApi.wall.get(count=1, filter='owner')
     return date['items'][0]['date']
+
+
+# Метод для витягнення дати останнього посту з групи коли вона головна сторінка
+def getLastPostDateGroup(owner_id):
+    session = vk.AuthSession()
+    vkApi = vk.API(session, v='5.62')
+    date = vkApi.wall.get(owner_id=owner_id, count=1, filter='owner')
+    return date['items'][0]['date']
+
+
+# Метод щоб отримати id групи
+def getGroupId(group_ids):
+    session = vk.AuthSession()
+    vkApi = vk.API(session, v='5.62')
+    response = vkApi.groups.getById(group_ids=group_ids)
+    return response[0]['id']
 
 
 # Метод витягуємо назви всіх альбомів
@@ -136,7 +141,7 @@ def createNewAlbum(session, title):
 def uploadPhotoToAlbum(session, album_id, dir, textfield, user):
     vkApi = vk.API(session, v='5.62')
     files = [f for f in os.listdir(dir) if os.path.isfile(os.path.join(dir, f))]
-
+    if 'Thumbs.db' in files: files.remove('Thumbs.db')  # Тимчасове рішення, треба зробити перевірку щоб додавати в масив тільки фото
     textfield.insert('end', 'Юзер № {} готовит загрузку {} фото\n'.format(user[0], len(files)))
     textfield.see('end')
 
