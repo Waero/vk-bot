@@ -140,6 +140,7 @@ def createNewAlbum(session, title):
 # Метод загрузки фото
 def uploadPhotoToAlbum(session, album_id, dir, textfield, user):
     vkApi = vk.API(session, v='5.62')
+    dir = dir.decode('utf-8')
     files = [f for f in os.listdir(dir) if os.path.isfile(os.path.join(dir, f))]
     if 'Thumbs.db' in files: files.remove('Thumbs.db')  # Тимчасове рішення, треба зробити перевірку щоб додавати в масив тільки фото
     textfield.insert('end', 'Юзер № {} готовит загрузку {} фото\n'.format(user[0], len(files)))
@@ -147,7 +148,9 @@ def uploadPhotoToAlbum(session, album_id, dir, textfield, user):
 
     for f in files:
         upload_url = vkApi.photos.getUploadServer(album_id=album_id)
-        r = requests.post(upload_url['upload_url'], files={'photo': open('{}/{}'.format(dir, f), "rb")})
+        fil = os.path.join(dir, f)
+        fil = os.path.normpath(fil)
+        r = requests.post(upload_url['upload_url'], files={'photo': open(fil, "rb")})
         params = {'server': r.json()['server'], 'photos_list': r.json()['photos_list'], 'hash': r.json()['hash'], 'album_id': album_id}
         vkApi.photos.save(**params)
         time.sleep(1)
