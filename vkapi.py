@@ -10,7 +10,7 @@ import database
 
 # Метод створює сесію і витягує друзів користувача
 def getFriendsAndSession(login, password):
-    session = vk.AuthSession(scope='friends, messages, wall, photos', app_id='5677795', user_login=login, user_password=password)
+    session = vk.AuthSession(scope='friends, messages, wall, photos, groups, notifications', app_id='5677795', user_login=login, user_password=password)
     vkApi = vk.API(session, v='5.62')
     uf = vkApi.friends.get(order='hints')
     # uf - cписок всіх друзів
@@ -29,7 +29,7 @@ def getVkId(login, password):
 # Метод витягує профіль юзера по ID
 def getUser(session,id):
     vkApi = vk.API(session, v='5.62')
-    u = vkApi.users.get(user_ids=id, fields='last_seen, counters, sex')
+    u = vkApi.users.get(user_ids=id, fields='last_seen, counters, sex, mutual_friends')
     return u
 
 
@@ -67,7 +67,7 @@ def addToFriendCaptcha(session, id, captcha_sid, captcha_key):
 # Метод витягує кому вже відправлялись заявки
 def getRequests(session):
     vkApi = vk.API(session, v='5.62')
-    sended_request = vkApi.friends.getRequests(out=1)
+    sended_request = vkApi.friends.getRequests(out=1, count=1000)
     return sended_request
 
 
@@ -143,7 +143,7 @@ def uploadPhotoToAlbum(session, album_id, dir, textfield, user):
     dir = dir.decode('utf-8')
     files = [f for f in os.listdir(dir) if os.path.isfile(os.path.join(dir, f))]
     if 'Thumbs.db' in files: files.remove('Thumbs.db')  # Тимчасове рішення, треба зробити перевірку щоб додавати в масив тільки фото
-    textfield.insert('end', 'Юзер № {} готовит загрузку {} фото\n'.format(user[0], len(files)))
+    textfield.insert('end', '{} - готовит загрузку {} фото\n'.format(user[9], len(files)))
     textfield.see('end')
 
     for f in files:
@@ -154,8 +154,32 @@ def uploadPhotoToAlbum(session, album_id, dir, textfield, user):
         params = {'server': r.json()['server'], 'photos_list': r.json()['photos_list'], 'hash': r.json()['hash'], 'album_id': album_id}
         vkApi.photos.save(**params)
         time.sleep(1)
-        textfield.insert('end', 'Юзер № {} загрузил новое фото\n'.format(user[0]))
+        textfield.insert('end', '{} - загрузил новое фото\n'.format(user[9]))
         textfield.see('end')
-        database.addToStatistics(user[9], 'photo')  # Додаємо в статистику
+        database.addToStatistics(user[9].decode('utf8'), 'photo')  # Додаємо в статистику
 
 
+def getSuggestions(session):
+    vkApi = vk.API(session, v='5.62')
+    suggested = vkApi.friends.getSuggestions(filter='mutual', fields='last_seen, sex')
+    return suggested
+
+
+# Додавання в групу
+def inviteToGroup(session, group_id, user_id):
+    vkApi = vk.API(session, v='5.62')
+    invite = vkApi.groups.invite(group_id=group_id, user_id=user_id)
+    return invite
+
+
+def checkIsGroupMembers(session, group_id, user_ids):
+    vkApi = vk.API(session, v='5.62')
+    members = vkApi.groups.isMember(group_id=group_id, user_ids=user_ids, extended=1)
+    return members
+
+
+# Витягуємо коменти до фото через нотіфікейшини
+def getCommentsOnPhoto(session, start_time):
+    vkApi = vk.API(session, v='5.62')
+    comments = vkApi.notifications.get(filters='comments', start_time=start_time)
+    return comments

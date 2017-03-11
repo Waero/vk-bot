@@ -7,6 +7,7 @@ from ConfigParser import SafeConfigParser
 import tkFont
 from ttk import Combobox
 import sqlite3 as db
+import time
 
 # Поля юзера в Settings
 import vkapi
@@ -79,6 +80,7 @@ class FabySettings:
         max_friends = config.getint('main', 'max_friends')
         self.main_group_link = config.get('post', 'main_group_link')
         self.invite_in_group_link = config.get('group', 'invite_in_group_link')
+        self.suggested_friends = config.getint('main', 'suggested_type')
 
         self.min_time.insert(0, min)
         self.max_time.insert(0, max)
@@ -212,6 +214,18 @@ class FabySettings:
                                                                                                image=self.save_btn_off))
         self.save_group_btn.bind("<Button-1>", self.edit_group)
 
+# Чекбокс для вибору типу додавання друзів
+        self.sug_friends = tk.IntVar()
+        cf = tk.Checkbutton(
+            Sbody, text="Добавлять друзей через Возможные друзья",
+            variable=self.sug_friends,
+            bg='#e6e6e6',
+            highlightthickness=0,
+            command=self.change_suggested_type)
+        cf.grid(row=11, columnspan=10, padx=10, pady=7, sticky='w')
+        if self.suggested_friends == 1:
+            cf.select()
+
 # Чекбокс для авто-ответа
         self.var = tk.IntVar()
         c = tk.Checkbutton(
@@ -220,10 +234,9 @@ class FabySettings:
             bg='#e6e6e6',
             highlightthickness=0,
             command=self.change_auto_answer)
-        c.grid(row=12, columnspan=4, padx=10, sticky='w')
+        c.grid(row=13, columnspan=4, padx=10, sticky='w')
         if auto_answer == 1:
             c.select()
-
 
 # Чекбокс для авто-посту
         self.a_post = tk.IntVar()
@@ -233,14 +246,14 @@ class FabySettings:
             bg='#e6e6e6',
             highlightthickness=0,
             command=self.change_auto_post)
-        ch.grid(row=12, column=5, columnspan=4, padx=10, sticky='w')
+        ch.grid(row=13, column=5, columnspan=4, padx=10, sticky='w')
         if auto_post == 1:
             ch.select()
 
 # Текстове поле для авто-ответа
-        tk.Label(Sbody, text='Настройка авто-ответа', bg='#e6e6e6').grid(row=11, columnspan=7, pady=10)
+        tk.Label(Sbody, text='Настройка авто-ответа', bg='#e6e6e6').grid(row=12, columnspan=7, pady=2)
         self.automessage = tk.Text(Sbody, width=40, height=5, bg='#e6e6e6', wrap='word', foreground='#858585')
-        self.automessage.grid(row=13, rowspan=5, columnspan=7, padx=10)
+        self.automessage.grid(row=14, rowspan=5, columnspan=7, padx=10)
         self.automessage.insert(1.0, message)
         self.automessage.config(state='disabled')
 
@@ -346,6 +359,14 @@ class FabySettings:
         with open('config.ini', 'w') as f:
             config.write(f)
 
+    # Метод для вибору типу додавання в друзі
+    def change_suggested_type(self):
+        # Зберігаємо в конфіг значення
+        config = SafeConfigParser()
+        config.read('config.ini')
+        config.set('main', 'suggested_type', str(self.sug_friends.get()))
+        with open('config.ini', 'w') as f:
+            config.write(f)
 
     # Метод для чекбокса авто-ответа
     def change_auto_answer(self):
@@ -353,6 +374,7 @@ class FabySettings:
         config = SafeConfigParser()
         config.read('config.ini')
         config.set('main', 'auto_answer', str(self.var.get()))
+        config.set('photo', 'auto_answer_on_comments', str(int(time.time())))
         with open('config.ini', 'w') as f:
             config.write(f)
 
