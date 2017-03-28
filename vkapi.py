@@ -183,3 +183,14 @@ def getCommentsOnPhoto(session, start_time):
     vkApi = vk.API(session, v='5.62')
     comments = vkApi.notifications.get(filters='comments', start_time=start_time)
     return comments
+
+
+def getExecute(session, bot_friend, max_friends):
+    vkApi = vk.API(session, v='5.62')
+    data = vkApi.execute.getCandidate(a=bot_friend[0],b=bot_friend[1], c=bot_friend[2],d=bot_friend[3],e=bot_friend[4],max=max_friends)
+    return data
+
+def getProfiles(session, batch):
+    vkApi = vk.API(session, v='5.62')
+    data = vkApi.execute.getProfiles(a=batch)
+    return data

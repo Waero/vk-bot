@@ -1,0 +1,45 @@
+Назва : execute.getCandidate
+Код:
+
+var profile = [Args.a,  Args.b,  Args.c, Args.d, Args.e];
+var candidate = null;
+var count = 0;
+var max = Args.max;
+
+while (candidate == null) {
+
+    candidate = API.friends.get({"user_id":profile[count], "order":"hints"});
+    if  (candidate == null) {
+            count = count +1;
+    }
+    if (candidate.count > max) {
+            candidate = null;
+            count = count +1;
+    }
+    if (count == 6) {
+        candidate = 0;
+    }
+}
+
+var profiles = API.users.get({"user_ids":candidate.items, "fields":"last_seen, counters, sex, mutual_friends"});
+
+var mutal = API.friends.getMutual({"target_uid":profile[count]});
+var sended_request = API.friends.getRequests({"out":1, "count":1000}).items;
+var friend_profile = API.users.get({"user_ids":profile[count], "fields":"last_seen, counters, sex, mutual_friends"});
+return [profiles,mutal,sended_request, friend_profile];
+
+------------------------------------------------------------------------------------------------------------------------
+
+Назва : execute.getProfiles
+Код:
+
+var liste = Args.a.split(",");
+var profiles = [];
+var count = 0;
+while (count < liste.length) {
+    var d = API.users.get({"user_id":liste[count], "fields":"last_seen, counters, sex, mutual_friends"});
+    profiles.push(d);
+    count = count+1;
+}
+var mutal = API.friends.getMutual({"target_uids":liste});
+return [profiles, mutal];
