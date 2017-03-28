@@ -49,7 +49,6 @@ class BotLogic:
         lock.release()
         time.sleep(sleep)
 
-
         if self.upload_photo == 1:
             self.uploadPhoto()
 
@@ -57,15 +56,6 @@ class BotLogic:
             lock.acquire()
             self.user_friends = self.getSessionAndFriend()
             lock.release()
-
-            # file = open('myFriend.txt', 'w')
-            # for item in self.user_friends[0]['items']:
-            #     file.write(str(item) + '\n')
-            # file.close()
-            #
-            # with open('sendRequest.txt', 'w') as f:
-            #     f.write('\n')
-            # f.close()
 
             # Перевіряємо чи не вимкнуто роботу бота
             if WORK == False:
@@ -111,8 +101,8 @@ class BotLogic:
         if self.suggested_type == 1:
             lock.acquire()
             no_friends_yet = self.getSuggestedFriends()
-            self.addNoFriendsYet(no_friends_yet)
             lock.release()
+            self.addNoFriendsYet(no_friends_yet)
         else:
             bot_friend = set(self.user_friends[0]['items']) - set(bots_id)
             bot_friend = list(bot_friend)
@@ -146,18 +136,11 @@ class BotLogic:
                                 no_friends_yet.append(i)
 
                 candidates_in_friends = []
-                # Тимчасово для тесту пропуску заявок
-
-                # file = open('myFriend.txt', 'a')
-                # for item in sended_request['items']:
-                #     file.write(str(item) + '\n')
-                # file.close()
 
                 # + Відсіюємо тих хто нам не підходить по профайлу
                 for t in no_friends_yet:
                     if 'deactivated' in t: continue
                     if time.time() - t['last_seen']['time'] > 1210000: continue
-
                     # Перевіряємо чи користувач потрібної нам статі
                     if t['sex'] == self.friend_sex or self.friend_sex == 3:
                         pass
@@ -275,10 +258,6 @@ class BotLogic:
                             self.textfield.see('end')
                             database.addToStatistics(self.user[9].decode('utf8'), 'friend')  # Додаємо в статистику
                             lock.release()
-                            # file = open('sendRequest.txt', 'a')
-                            # file.write(str(no_friendID) + '\n')
-                            # file.close()
-
                             time.sleep(sleep)
 
                         except Exception as e:
