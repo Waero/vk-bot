@@ -14,6 +14,7 @@ from datetime import date, datetime
 WORK = True
 lock = threading.Lock()
 
+
 class BotLogic:
     def __init__(self, user, textfield):
         self.user = list(user)
@@ -36,7 +37,6 @@ class BotLogic:
         self.invite_to_group_id = config.getint('group', 'invite_in_group')
         self.add_to_friend = config.getint('main', 'add_to_friend')
 
-
     # Логіка поведінки бота
     def worker(self):
 
@@ -45,20 +45,20 @@ class BotLogic:
         self.requestPerDay()
         # При старті присвоюємо юзерам час очікування, щоб кожен стартанув у різний час
         sleep = random.randrange(self.min, self.max)
-        self.textfield.insert('end', "{} - настроен и ждет {} секунд \n".format(self.user[9], sleep))
+        self.textfield.insert('end', "{} - настроен и ждет {} секунд\n".format(self.user[9], sleep))
         lock.release()
         time.sleep(sleep)
 
         if self.upload_photo == 1:
             self.uploadPhoto()
 
-        while WORK == True:
+        while WORK:
             lock.acquire()
             self.user_friends = self.getSessionAndFriend()
             lock.release()
-
+            accept_friend(self.user_friends[1])
             # Перевіряємо чи не вимкнуто роботу бота
-            if WORK == False:
+            if not WORK:
                 raise Exception('Stop')
 
             # Перевіряємо чи будемо додавати в друзі
@@ -69,7 +69,7 @@ class BotLogic:
             if self.auto_answer == 1:
                 sleep = random.randrange(self.min, self.max)
                 lock.acquire()
-                self.textfield.insert('end', '{} - проверяет сообщения. Ждет {} секунд \n'.format(self.user[9], sleep))
+                self.textfield.insert('end', '{} - проверяет сообщения. Ждет {} секунд\n'.format(self.user[9], sleep))
                 self.textfield.see('end')
                 lock.release()
                 time.sleep(sleep)
@@ -79,7 +79,7 @@ class BotLogic:
                 sleep = random.randrange(self.min, self.max)
                 lock.acquire()
                 self.textfield.insert('end',
-                                      '{} - проверяет стену на постинг. Ждет {} секунд \n'.format(self.user[9], sleep))
+                                      '{} - проверяет стену на постинг. Ждет {} секунд\n'.format(self.user[9], sleep))
                 self.textfield.see('end')
                 lock.release()
                 time.sleep(sleep)
@@ -90,7 +90,7 @@ class BotLogic:
                 sleep = random.randrange(self.min, self.max)
                 lock.acquire()
                 self.textfield.insert('end',
-                                      '{} - готовит приглашение в групу. Ждет {} секунд \n'.format(self.user[9], sleep))
+                                      '{} - готовит приглашение в групу. Ждет {} секунд\n'.format(self.user[9], sleep))
                 self.textfield.see('end')
                 lock.release()
                 time.sleep(sleep)
@@ -109,7 +109,7 @@ class BotLogic:
             counts = 0
             while len(bot_friend) > counts:
                 lock.acquire()
-                data = getExecute(session=self.user_friends[1], bot_friend=bot_friend[counts:counts+5], max_friends=self.max_friends)
+                data = get_candidate(session=self.user_friends[1], bot_friend=bot_friend[counts:counts + 5], max_friends=self.max_friends)
                 lock.release()
                 counts += 5
                 sleep = random.randrange(1, 5)
@@ -117,7 +117,7 @@ class BotLogic:
                 friend_profile = data[3]
                 friend_name = friend_profile[0]['first_name'].encode('utf8') + ' ' + friend_profile[0]['last_name'].encode('utf8')
                 lock.acquire()
-                self.textfield.insert('end', '{} - зашел к друзьям друга {}. Ждет {} секунд \n'.format(self.user[9],
+                self.textfield.insert('end', '{} - зашел к друзьям друга {}. Ждет {} секунд\n'.format(self.user[9],
                                                                                                        friend_name,
                                                                                                        sleep))
                 self.textfield.see('end')
@@ -140,6 +140,7 @@ class BotLogic:
                 # + Відсіюємо тих хто нам не підходить по профайлу
                 for t in no_friends_yet:
                     if 'deactivated' in t: continue
+                    if t['blacklisted'] == 1: continue
                     if time.time() - t['last_seen']['time'] > 1210000: continue
                     # Перевіряємо чи користувач потрібної нам статі
                     if t['sex'] == self.friend_sex or self.friend_sex == 3:
@@ -155,7 +156,7 @@ class BotLogic:
     def addNoFriendsYet(self, no_friends_yet):
         sleep = random.randrange(1, 5)
         lock.acquire()
-        self.textfield.insert('end', '{} - нашел {} потенциальных друзей. Ждет {} секунд \n'.format(self.user[9],
+        self.textfield.insert('end', '{} - нашел {} потенциальных друзей. Ждет {} секунд\n'.format(self.user[9],
                                                                                                     len(no_friends_yet),
                                                                                                     sleep))
         self.textfield.see('end')
@@ -165,7 +166,7 @@ class BotLogic:
         count = 0
         while count < len(no_friends_yet):
             lock.acquire()
-            profiles = getProfiles(session=self.user_friends[1], batch=no_friends_yet[count:count+24])
+            profiles = get_profiles(session=self.user_friends[1], batch=no_friends_yet[count:count + 24])
             lock.release()
             count += 24
             # Обєднуємо масиви в один для зручності
@@ -247,9 +248,9 @@ class BotLogic:
                         try:
                             sleep = random.randrange(self.min, self.max)
                             lock.acquire()
-                            addToFriend(session=self.user_friends[1], id=no_friendID[0]['id'])
+                            add_to_friend(session=self.user_friends[1], id=no_friendID[0]['id'])
                             self.textfield.insert('end',
-                                                  '{} - отправил запрос в друзья юзеру {}. Ждет {} секунд \n'.format(
+                                                  '{} - отправил запрос в друзья юзеру {}. Ждет {} секунд\n'.format(
                                                       self.user[9],
                                                       user_name,
                                                       sleep))
@@ -266,7 +267,7 @@ class BotLogic:
                         sleep = random.randrange(1, 5)
                         lock.acquire()
                         self.textfield.insert('end',
-                                              '{} - не нашел {} общих друзей с {}. Ждет {} секунд \n'.format(self.user[9],
+                                              '{} - не нашел {} общих друзей с {}. Ждет {} секунд\n'.format(self.user[9],
                                                                                                              self.min_mutal,
                                                                                                              user_name,
                                                                                                              sleep))
@@ -278,12 +279,12 @@ class BotLogic:
                     if e.__class__ == NameError:
                         lock.acquire()
                         self.textfield.insert('end',
-                                              '{} - прекратил работу, причина: {} \n'.format(self.user[9], e.message))
+                                              '{} - прекратил работу, причина: {}\n'.format(self.user[9], e.message))
                         self.textfield.see('end')
                         lock.release()
                         raise Exception
                     lock.acquire()
-                    self.textfield.insert('end', '{} - не додал в друзья, причина: {} \n'.format(self.user[9], e.message))
+                    self.textfield.insert('end', '{} - не додал в друзья, причина: {}\n'.format(self.user[9], e.message))
                     self.textfield.see('end')
                     lock.release()
                     self.not_added += 1
@@ -297,14 +298,14 @@ class BotLogic:
 
     # Метод автоматичної відповіді на повідомлення та коментарі до фото
     def autoAnswerOnMessage(self):
-        new_messages = getMessages(self.user_friends[1])
+        new_messages = get_messages(self.user_friends[1])
         if new_messages['count'] != 0:
             for i in new_messages['items']:
-                sendMessage(session=self.user_friends[1], f_id=i['message']['user_id'], message=self.message)
+                send_message(session=self.user_friends[1], f_id=i['message']['user_id'], message=self.message)
                 database.addToStatistics(self.user[9].decode('utf8'), 'message')  # Додаємо в статистику
 
             sleep = random.randrange(self.min, self.max)
-            self.textfield.insert('end', '{} - ответил на сообщение. Ждет {} секунд \n'.format(self.user[9], sleep))
+            self.textfield.insert('end', '{} - ответил на сообщение. Ждет {} секунд\n'.format(self.user[9], sleep))
             self.textfield.see('end')
             time.sleep(sleep)
 
@@ -312,18 +313,18 @@ class BotLogic:
         config = SafeConfigParser()
         config.read('config.ini')
         last_comment_data = config.getint('photo', 'auto_answer_on_comments')
-        new_comments = getCommentsOnPhoto(self.user_friends[1], last_comment_data)
+        new_comments = get_comments_on_photo(self.user_friends[1], last_comment_data)
         if new_comments['count'] != 0:
             for i in new_comments['items']:
                 if i['date'] >= last_comment_data:
-                    sendMessage(session=self.user_friends[1], f_id=i['feedback']['from_id'], message=self.message)
+                    send_message(session=self.user_friends[1], f_id=i['feedback']['from_id'], message=self.message)
                     database.addToStatistics(self.user[9].decode('utf8'), 'message')  # Додаємо в статистику
             config.set('photo', 'auto_answer_on_comments', str(int(time.time())))
             with open('config.ini', 'w') as f:
                 config.write(f)
 
             sleep = random.randrange(self.min, self.max)
-            self.textfield.insert('end', '{} - ответил на коментарий. Ждет {} секунд \n'.format(self.user[9], sleep))
+            self.textfield.insert('end', '{} - ответил на коментарий. Ждет {} секунд\n'.format(self.user[9], sleep))
             self.textfield.see('end')
             time.sleep(sleep)
 
@@ -349,7 +350,7 @@ class BotLogic:
             else:
                 owner_id = '-' + str(main_is_group)
 
-            post = getLastPost(self.user_friends[1], owner_id)
+            post = get_last_post(self.user_friends[1], owner_id)
             if post['items'][0]['date'] > post_date:
 
                 attachments = ''
@@ -377,7 +378,7 @@ class BotLogic:
             cur = con.cursor()
             task_for_user = (cur.execute("SELECT * FROM tasks WHERE bot_id=?;", (self.user[0],))).fetchall()
             for task in task_for_user:
-                postOnWall(self.user_friends[1], task)
+                post_on_wall(self.user_friends[1], task)
                 # Видаляємо завдання після посту, щоб бот потім знову це не запостив
                 cur.execute("DELETE FROM tasks WHERE id=?;", (task[0],))
                 con.commit()
@@ -393,7 +394,7 @@ class BotLogic:
         config.read('config.ini')
         dir = config.get('photo', 'upload_dir')
         title = dir.rsplit('/')
-        response = getAlbumsTitle(login=self.user[1], password=self.user[2])
+        response = get_albums_title(login=self.user[1], password=self.user[2])
         session = response[0]
         albums_title = response[1]
         album_id = 0
@@ -404,19 +405,19 @@ class BotLogic:
                 album_id = t['id']
                 break
         if album_id == 0:
-            new_album = createNewAlbum(session, title[-1])
+            new_album = create_new_album(session, title[-1])
             album_id = new_album['id']
 
-        uploadPhotoToAlbum(session, album_id, dir, self.textfield, self.user)
+        upload_photo_to_album(session, album_id, dir, self.textfield, self.user)
 
     def getSessionAndFriend(self):
         # Отримуємо всіх друзів юзера (тянемо тільки ID). Також ловимо помилку про авторизацію і виводимо її
         try:
             sleep = random.randrange(1, 5)
-            user_friends = getFriendsAndSession(login=self.user[1], password=self.user[2])
+            user_friends = get_friends_and_session(login=self.user[1], password=self.user[2])
             # random.shuffle(user_friends[0]['items'])  # Перемішуємо друзів, щоб не проходитись завжди від початку списку
             self.textfield.insert('end',
-                                  '{} - зашел к друзьям у него их {}. Ждет {} секунд \n'.format(self.user[9],
+                                  '{} - зашел к друзьям у него их {}. Ждет {} секунд\n'.format(self.user[9],
                                                                                                 str(user_friends[0][
                                                                                                         'count']),
                                                                                                 sleep))
@@ -424,12 +425,12 @@ class BotLogic:
             self.textfield.see('end')
             return user_friends
         except Exception as e:
-            self.textfield.insert('end', '{} - прекратил работу, причина : {} \n'.format(self.user[9], e.message))
+            self.textfield.insert('end', '{} - прекратил работу, причина : {}\n'.format(self.user[9], e.message))
             self.textfield.see('end')
 
     def getSuggestedFriends(self):
         no_friends_yet = []
-        suggested = getSuggestions(session=self.user_friends[1])
+        suggested = get_suggestions(session=self.user_friends[1])
         for us in suggested['items']:
             if us['id'] in bots_id: continue
             if time.time() - us['last_seen']['time'] > 1210000: continue
@@ -446,14 +447,14 @@ class BotLogic:
         group_id = self.invite_to_group_id
         if self.for_invite == []:
             friends = self.user_friends[0]['items'][:500]
-            self.for_invite = checkIsGroupMembers(session, group_id, friends)
+            self.for_invite = check_is_group_members(session, group_id, friends)
         for i in self.for_invite:
             if i['member'] == 0:
                 if 'invitation' in i:
                     self.for_invite.remove(i)
                     continue
                 try:
-                    inviteToGroup(session, group_id, i['user_id'])
+                    invite_to_group(session, group_id, i['user_id'])
                 except Exception as e:
                     if e.code == 15:
                         time.sleep(1)

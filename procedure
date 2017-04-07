@@ -21,12 +21,12 @@ while (candidate == null) {
     }
 }
 
-var profiles = API.users.get({"user_ids":candidate.items, "fields":"last_seen, counters, sex, mutual_friends"});
+var profiles = API.users.get({"user_ids":candidate.items, "fields":"last_seen, counters, sex, mutual_friends, blacklisted"});
 
 var mutal = API.friends.getMutual({"target_uid":profile[count]});
 var sended_request = API.friends.getRequests({"out":1, "count":1000}).items;
 var friend_profile = API.users.get({"user_ids":profile[count], "fields":"last_seen, counters, sex, mutual_friends"});
-return [profiles,mutal,sended_request, friend_profile];
+return [profiles, mutal, sended_request, friend_profile];
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -34,12 +34,18 @@ return [profiles,mutal,sended_request, friend_profile];
 Код:
 
 var liste = Args.a.split(",");
+var check_mutal = [];
 var profiles = [];
 var count = 0;
+
 while (count < liste.length) {
-    var d = API.users.get({"user_id":liste[count], "fields":"last_seen, counters, sex, mutual_friends"});
-    profiles.push(d);
+    var d = API.users.get({"user_id":liste[count], "fields":"last_seen, counters, sex, mutual_friends, blacklisted"});
+    if (d[0].blacklisted == 0) {
+       check_mutal.push(liste[count]);
+       profiles.push(d);
+    }
     count = count+1;
+
 }
-var mutal = API.friends.getMutual({"target_uids":liste});
+var mutal = API.friends.getMutual({"target_uids":check_mutal});
 return [profiles, mutal];

@@ -142,7 +142,7 @@ class Accounts:
         login = self.loginField.get().strip()
         password = self.passwordField.get().strip()
         vk.logger.setLevel('DEBUG')
-        vk_id = vkapi.getVkId(login=login, password=password)
+        vk_id = vkapi.get_vk_id(login=login, password=password)
         uname = vk_id[0]['first_name'] + ' ' + vk_id[0]['last_name']
         # This is the qmark style:
         cur.execute("insert into users (login, password, vk_id, name) values (?, ?, ?, ?)",
@@ -197,7 +197,7 @@ class Accounts:
         # Витягуємо юзера щоб потім витягнути з вк дату останнього посту
         user = cur.execute("SELECT login, password From users where id=?;", (self.main_page.get(),)).fetchone()
         con.commit()
-        date = vkapi.getLastPostDate(user[0], user[1])
+        date = vkapi.get_last_post_date(user[0], user[1])
         # Зберігаємо дату останнього посту в конфіг файл
         config = SafeConfigParser()
         config.read('config.ini')
@@ -235,7 +235,7 @@ class EditUserDialog:
     def ok(self):
         con = db.connect(database="vkbot")
         cur = con.cursor()
-        vk_id = vkapi.getVkId(login=self.e1.get().strip(), password=self.e2.get().strip())
+        vk_id = vkapi.get_vk_id(login=self.e1.get().strip(), password=self.e2.get().strip())
         uname = vk_id[0]['first_name'] + ' ' + vk_id[0]['last_name']
         # This is the qmark style:
         cur.execute("UPDATE users SET login=?, password=?, vk_id=?, name=? WHERE id=?;",

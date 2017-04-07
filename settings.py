@@ -11,7 +11,7 @@ import time
 
 # Поля юзера в Settings
 import vkapi
-from vkapi import getGroupId
+from vkapi import get_group_id
 
 
 class FabySettings:
@@ -457,7 +457,7 @@ class FabySettings:
                     pass
                 else:
                     group_name = id_m.rsplit('/')
-                    group_id = getGroupId(group_name[-1])
+                    group_id = get_group_id(group_name[-1])
                     config.set('post', 'main_is_group', str(group_id))
                     # Cтавимо всім сторінкам False як головних сторінок, бо головна зараз група!
                     con = db.connect(database="vkbot")
@@ -466,7 +466,7 @@ class FabySettings:
                     cur.execute(query, (0,))
                     con.commit()
                     con.close()
-                    date = vkapi.getLastPostDateGroup('-'+ str(group_id))
+                    date = vkapi.get_last_post_date_group('-' + str(group_id))
                     # Зберігаємо дату останнього посту в конфіг файл
                     config.set('post', 'date', str(date))
                     config.set('post', 'main_group_link', str(id_m))
@@ -481,7 +481,7 @@ class FabySettings:
                     pass
                 else:
                     group_name_i = id_i.rsplit('/')
-                    group_i_id = getGroupId(group_name_i[-1])
+                    group_i_id = get_group_id(group_name_i[-1])
                     config.set('group', 'invite_in_group', str(group_i_id))
                     config.set('group', 'invite_in_group_link', str(id_i))
             else:
