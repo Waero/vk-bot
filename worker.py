@@ -185,30 +185,27 @@ class BotLogic:
 
                 # Перевіряємо чи нема не прочитаних повідомлень, якщо є, то відправляємо стандартне повідомлення.
                 if self.auto_answer == 1:
-                    lock.acquire()
                     self.autoAnswerOnMessage()
-                    lock.release()
 
                 # Перевіряємо чи не потрібно постити на стіну, якщо так, то виконуємо метод постингу.
                 if self.auto_post == 1:
-                    lock.acquire()
                     self.checkIfNeedCopy()
-                    lock.release()
 
                 # Перевіряємо чи не потрібно запрошувати в групу, якщо так, то виконуємо метод запрошення.
                 if self.invite_to_group_id != 0:
-                    lock.acquire()
                     self.inviteToGroup()
-                    lock.release()
 
                 # Перевіряємо чи не перебільшений ліміт на день
                 lock.acquire()
                 send_and_max_request = database.sendRequest(self.user[0])
+                lock.release()
                 if send_and_max_request[1] == send_and_max_request[0]:
+                    lock.acquire()
                     self.textfield.insert('end','{} - прекратил работу. Отправлено макс к-во запросов на день\n'.format(self.user[9]))
                     self.textfield.see('end')
+                    lock.release()
                     raise Exception('Stop')
-                lock.release()
+
                 sleep = random.randrange(1, 5)
                 user_name = no_friendID[0]['first_name'].encode('utf8') + ' ' + no_friendID[0]['last_name'].encode('utf8')
                 lock.acquire()
@@ -248,7 +245,7 @@ class BotLogic:
                         try:
                             sleep = random.randrange(self.min, self.max)
                             lock.acquire()
-                            add_to_friend(session=self.user_friends[1], id=no_friendID[0]['id'])
+                            # add_to_friend(session=self.user_friends[1], id=no_friendID[0]['id'])
                             self.textfield.insert('end',
                                                   '{} - отправил запрос в друзья юзеру {}. Ждет {} секунд\n'.format(
                                                       self.user[9],

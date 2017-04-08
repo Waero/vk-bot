@@ -202,6 +202,8 @@ def get_profiles(session, batch):
 
 def accept_friend(session):
     vkApi = vk.API(session, v='5.63')
-    data = vkApi.execute(code='var a = API.friends.getRequests().items; var count = 0; while (a.length > count)'
-                              ' { API.friends.add({"user_id": a[count]});} return a;')
-    return data
+    try:
+        data = vkApi.execute(code='var a = API.friends.getRequests().items; var count = 0; while (a.length > count)'
+                                  ' { API.friends.add({"user_id": a[count]}); count = count+1; } return a;')
+    except:
+        pass
