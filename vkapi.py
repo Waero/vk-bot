@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import os
-
 import requests
 import time
 import vk
@@ -16,7 +15,7 @@ def get_friends_and_session(login, password):
                              user_login=login, user_password=password)
     vkApi = vk.API(session, v='5.62')
     uf = vkApi.friends.get(order='hints')
-    # uf - cписок всіх друзів
+    # uf - список всіх друзів
     # session - Сесія юзера
     return uf, session
 
@@ -202,6 +201,7 @@ def get_profiles(session, batch):
 
 
 def accept_friend(session):
-    vkApi = vk.API(session, v='5.62')
-    data = vkApi.execute(code='var a = API.friends.get_requests().items; var count = 0; while (count < a.length)'
-                              ' { API.friends.add({"user_id": a[count]["id"]});} return a;')
+    vkApi = vk.API(session, v='5.63')
+    data = vkApi.execute(code='var a = API.friends.getRequests().items; var count = 0; while (a.length > count)'
+                              ' { API.friends.add({"user_id": a[count]});} return a;')
+    return data

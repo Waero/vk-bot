@@ -55,8 +55,8 @@ class BotLogic:
         while WORK:
             lock.acquire()
             self.user_friends = self.getSessionAndFriend()
-            lock.release()
             accept_friend(self.user_friends[1])
+            lock.release()
             # Перевіряємо чи не вимкнуто роботу бота
             if not WORK:
                 raise Exception('Stop')
