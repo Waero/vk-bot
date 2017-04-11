@@ -4,17 +4,21 @@ import os
 import requests
 import time
 import vk
+from requests.packages import urllib3
+
 import database
 
-APP_ID = 5677795
+APP_ID = 5965576
+APP_ID2 = 5677795  # Інший апп
 
 
 # Метод створює сесію і витягує друзів користувача
 def get_friends_and_session(login, password):
-    session = vk.AuthSession(scope='friends, messages, wall, photos, groups, notifications', app_id='5965576',
+    session = vk.AuthSession(scope='friends, messages, wall, photos, groups, notifications', app_id=APP_ID,
                              user_login=login, user_password=password)
-    vkApi = vk.API(session, v='5.62')
-    uf = vkApi.friends.get(order='hints')
+    time.sleep(1)
+    vk_api = vk.API(session, v='5.62')
+    uf = vk_api.friends.get(order='hints')
     # uf - список всіх друзів
     # session - Сесія юзера
     return uf, session
@@ -22,7 +26,7 @@ def get_friends_and_session(login, password):
 
 # Метод витягує id користувача
 def get_vk_id(login, password):
-    session = vk.AuthSession(app_id='5965576', user_login=login, user_password=password)
+    session = vk.AuthSession(app_id=APP_ID, user_login=login, user_password=password)
     vkApi = vk.API(session, v='5.62')
     vk_id = vkApi.users.get()
     return vk_id
@@ -102,7 +106,7 @@ def post_on_wall(session, task):
 
 # Метод для витягнення дати останнього посту коли вибираємо головну сторінку
 def get_last_post_date(login, password):
-    session = vk.AuthSession(app_id='5677795', user_login=login, user_password=password)
+    session = vk.AuthSession(app_id=APP_ID, user_login=login, user_password=password)
     vkApi = vk.API(session, v='5.62')
     date = vkApi.wall.get(count=1, filter='owner')
     return date['items'][0]['date']
@@ -126,7 +130,7 @@ def get_group_id(group_ids):
 
 # Метод витягуємо назви всіх альбомів
 def get_albums_title(login, password):
-    session = vk.AuthSession(scope='photos', app_id='5677795', user_login=login, user_password=password)
+    session = vk.AuthSession(scope='photos', app_id=APP_ID, user_login=login, user_password=password)
     vkApi = vk.API(session, v='5.62')
     albums = vkApi.photos.getAlbums()
     return session, albums
@@ -188,14 +192,13 @@ def get_comments_on_photo(session, start_time):
 
 
 def get_candidate(session, bot_friend, max_friends):
-    vkApi = vk.API(session, v='5.62')
-    data = vkApi.execute.getCandidate(a=bot_friend[0], b=bot_friend[1], c=bot_friend[2],
-                                      d=bot_friend[3], e=bot_friend[4], max=max_friends)
+    vkApi = vk.API(session, v='5.63')
+    data = vkApi.execute.getCandidate(a=bot_friend, max=max_friends)
     return data
 
 
 def get_profiles(session, batch):
-    vkApi = vk.API(session, v='5.62')
+    vkApi = vk.API(session, v='5.63')
     data = vkApi.execute.getProfiles(a=batch)
     return data
 

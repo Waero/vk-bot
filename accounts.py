@@ -25,7 +25,7 @@ class Accounts:
 
         def AuxscrollFunction(event):
             # You need to set a max size for frameTwo. Otherwise, it will grow as needed, and scrollbar do not act
-            canvas.configure(scrollregion=canvas.bbox("all"), width=550, height=380)
+            canvas.configure(scrollregion=canvas.bbox("all"), width=550, height=350)
             # canvas.configure(scrollregion=canvas.bbox("all"))
 
         self.listFrame.bind("<Configure>", AuxscrollFunction)
@@ -141,47 +141,50 @@ class Accounts:
 
         login = self.loginField.get().strip()
         password = self.passwordField.get().strip()
-        vk.logger.setLevel('DEBUG')
-        vk_id = vkapi.get_vk_id(login=login, password=password)
-        uname = vk_id[0]['first_name'] + ' ' + vk_id[0]['last_name']
-        # This is the qmark style:
-        cur.execute("insert into users (login, password, vk_id, name) values (?, ?, ?, ?)",
-                    (login, password, vk_id[0]['id'], uname))
-        con.commit()
-        lastList = cur.execute("SELECT * FROM users ORDER BY id DESC LIMIT 1")
+        try:
+            vk_id = vkapi.get_vk_id(login=login, password=password)
+            uname = vk_id[0]['first_name'] + ' ' + vk_id[0]['last_name']
+            # This is the qmark style:
+            cur.execute("insert into users (login, password, vk_id, name) values (?, ?, ?, ?)",
+                        (login, password, vk_id[0]['id'], uname))
+            con.commit()
+            lastList = cur.execute("SELECT * FROM users ORDER BY id DESC LIMIT 1")
 
-        # Виводимо алерт що юзера додано в базу
-        tkMessageBox.showinfo(
-            "Updated",
-            "Аккаунт {} успешно додан".format(uname.encode('utf-8'))
-        )
-        # Очищаємо поле для ввода логіна і пароля і додаємо останнього юзера на екран
+            # Виводимо алерт що юзера додано в базу
+            tkMessageBox.showinfo(
+                "Updated",
+                "Аккаунт {} успешно додан".format(uname.encode('utf-8'))
+            )
+            # Додаємо останнього юзера на екран
+            for i in lastList:
+                tk.Label(self.listFrame, text=str(i[0]), bg='#e6e6e6').grid(row=self.id, column=0, padx=15, sticky='w')
+                tk.Label(self.listFrame, text=i[9], bg='#e6e6e6').grid(row=self.id, column=1, padx=15, sticky='w')
+                but = tk.Button(self.listFrame, text='Yes',image=self.work_btn_on, bg='#e6e6e6', borderwidth=0, highlightthickness=0)
+                but.grid(row=self.id, column=2, padx=15)
+                but.bind("<Button-1>", lambda event, uid=str(i[0]), but=but: self.change(event, uid, but))
+                # Кнопки Редагувати і Видалити
+                edit_btn = tk.Button(self.listFrame, image=self.edit_user_btn_off, borderwidth=0, highlightthickness=0,
+                                     bg='#e6e6e6')
+                edit_btn.bind("<Enter>", lambda event, h=edit_btn: h.configure(image=self.edit_user_btn_on))
+                edit_btn.bind("<Leave>", lambda event, h=edit_btn: h.configure(image=self.edit_user_btn_off))
+                edit_btn.grid(row=self.id, column=3, padx=15, sticky='w')
+                edit_btn.bind("<Button-1>", lambda event, uid=str(i[0]), but=but: EditUserDialog(parent=self.listFrame, uid=uid, accounts=self.accounts))
+                delete_btn = tk.Button(self.listFrame, image=self.delete_btn_off, borderwidth=0,
+                                       highlightthickness=0, bg='#e6e6e6')
+                delete_btn.bind("<Enter>", lambda event, h=delete_btn: h.configure(image=self.delete_btn_on))
+                delete_btn.bind("<Leave>", lambda event, h=delete_btn: h.configure(image=self.delete_btn_off))
+                delete_btn.grid(row=self.id, column=4, padx=15, sticky='w')
+                delete_btn.bind("<Button-1>", lambda event, uid=str(i[0]), but=but: self.deleteUser(uid=uid))
+                tk.Radiobutton(self.listFrame, variable=self.main_page, value=i[0], borderwidth=0, bg='#e6e6e6',
+                               highlightthickness=0, command=self.markAsMainPage).grid(row=self.id, column=5, padx=15,
+                                                                                       sticky='we')
+                self.id = self.id+1
+            con.close()
+        except Exception as e:
+            tkMessageBox.showerror("Error", "{}".format(e.message))
+        # Очищаємо поля для ввода
         self.loginField.delete("0", "end")
         self.passwordField.delete("0", "end")
-        for i in lastList:
-            tk.Label(self.listFrame, text=str(i[0]), bg='#e6e6e6').grid(row=self.id, column=0, padx=15, sticky='w')
-            tk.Label(self.listFrame, text=i[9], bg='#e6e6e6').grid(row=self.id, column=1, padx=15, sticky='w')
-            but = tk.Button(self.listFrame, text='Yes',image=self.work_btn_on, bg='#e6e6e6', borderwidth=0, highlightthickness=0)
-            but.grid(row=self.id, column=2, padx=15)
-            but.bind("<Button-1>", lambda event, uid=str(i[0]), but=but: self.change(event, uid, but))
-            # Кнопки Редагувати і Видалити
-            edit_btn = tk.Button(self.listFrame, image=self.edit_user_btn_off, borderwidth=0, highlightthickness=0,
-                                 bg='#e6e6e6')
-            edit_btn.bind("<Enter>", lambda event, h=edit_btn: h.configure(image=self.edit_user_btn_on))
-            edit_btn.bind("<Leave>", lambda event, h=edit_btn: h.configure(image=self.edit_user_btn_off))
-            edit_btn.grid(row=self.id, column=3, padx=15, sticky='w')
-            edit_btn.bind("<Button-1>", lambda event, uid=str(i[0]), but=but: EditUserDialog(parent=self.listFrame, uid=uid, accounts=self.accounts))
-            delete_btn = tk.Button(self.listFrame, image=self.delete_btn_off, borderwidth=0,
-                                   highlightthickness=0, bg='#e6e6e6')
-            delete_btn.bind("<Enter>", lambda event, h=delete_btn: h.configure(image=self.delete_btn_on))
-            delete_btn.bind("<Leave>", lambda event, h=delete_btn: h.configure(image=self.delete_btn_off))
-            delete_btn.grid(row=self.id, column=4, padx=15, sticky='w')
-            delete_btn.bind("<Button-1>", lambda event, uid=str(i[0]), but=but: self.deleteUser(uid=uid))
-            tk.Radiobutton(self.listFrame, variable=self.main_page, value=i[0], borderwidth=0, bg='#e6e6e6',
-                           highlightthickness=0, command=self.markAsMainPage).grid(row=self.id, column=5, padx=15,
-                                                                                   sticky='we')
-            self.id = self.id+1
-        con.close()
 
 
     def markAsMainPage(self):

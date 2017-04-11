@@ -13,6 +13,9 @@ from datetime import date, datetime
 
 WORK = True
 lock = threading.Lock()
+lock2 = threading.Lock()
+db_lock = threading.Lock()
+urllib3.disable_warnings()
 
 
 class BotLogic:
@@ -26,7 +29,7 @@ class BotLogic:
         config.read('config.ini')
         self.max = config.getint('main', 'max')
         self.min = config.getint('main', 'min')
-        self.min_mutal = config.getint('main', 'mutal')
+        self.min_mutual = config.getint('main', 'mutal')
         self.max_friends = config.getint('main', 'max_friends')
         self.message = config.get('main', 'message')
         self.auto_answer = config.getint('main', 'auto_answer')
@@ -39,98 +42,76 @@ class BotLogic:
 
     # Логіка поведінки бота
     def worker(self):
-
-        # Метод максимальних і відправлених реквестів
-        lock.acquire()
-        self.requestPerDay()
+        # Перевірка максимальних і відправлених реквестів
+        self.request_per_day()
         # При старті присвоюємо юзерам час очікування, щоб кожен стартанув у різний час
         sleep = random.randrange(self.min, self.max)
-        self.textfield.insert('end', "{} - настроен и ждет {} секунд\n".format(self.user[9], sleep))
-        lock.release()
+        self.wr_in_progress('настроен и ждет', sleep)
         time.sleep(sleep)
 
         if self.upload_photo == 1:
-            self.uploadPhoto()
+            self.upload_photo_in_album()
 
         while WORK:
-            lock.acquire()
-            self.user_friends = self.getSessionAndFriend()
-            accept_friend(self.user_friends[1])
-            lock.release()
-            # Перевіряємо чи не вимкнуто роботу бота
-            if not WORK:
-                raise Exception('Stop')
+                self.user_friends = self.find_session_and_friend()
+                with lock:
+                    accept_friend(self.user_friends[1])
+                # Перевіряємо чи не вимкнуто роботу бота
+                if not WORK:
+                    raise Exception('Stop')
 
-            # Перевіряємо чи будемо додавати в друзі
-            if self.add_to_friend == 1:
-                self.inviteToFriend()
+                # Перевіряємо чи будемо додавати в друзі
+                if self.add_to_friend == 1:
+                    self.invite_to_friend()
 
-            # Перевіряємо чи нема не прочитаних повідомлень, якщо є, то відправляємо стандартне повідомлення.
-            if self.auto_answer == 1:
-                sleep = random.randrange(self.min, self.max)
-                lock.acquire()
-                self.textfield.insert('end', '{} - проверяет сообщения. Ждет {} секунд\n'.format(self.user[9], sleep))
-                self.textfield.see('end')
-                lock.release()
-                time.sleep(sleep)
-                self.autoAnswerOnMessage()
-            # Перевіряємо чи не потрібно постити на стіну, якщо так, то виконуємо метод постингу.
-            if self.auto_post == 1:
-                sleep = random.randrange(self.min, self.max)
-                lock.acquire()
-                self.textfield.insert('end',
-                                      '{} - проверяет стену на постинг. Ждет {} секунд\n'.format(self.user[9], sleep))
-                self.textfield.see('end')
-                lock.release()
-                time.sleep(sleep)
-                self.checkIfNeedCopy()
+                # Перевіряємо чи нема не прочитаних повідомлень, якщо є, то відправляємо стандартне повідомлення.
+                if self.auto_answer == 1:
+                    sleep = random.randrange(self.min, self.max)
+                    self.wr_in_progress('проверяет сообщения', sleep)
+                    time.sleep(sleep)
+                    self.answer_on_message()
+                # Перевіряємо чи не потрібно постити на стіну, якщо так, то виконуємо метод постингу.
+                if self.auto_post == 1:
+                    sleep = random.randrange(self.min, self.max)
+                    self.wr_in_progress('проверяет стену на постинг', sleep)
+                    time.sleep(sleep)
+                    self.check_if_need_copy_post()
 
-                # Перевіряємо чи не потрібно запрошувати в групу, якщо так, то виконуємо метод запрошення.
-            if self.invite_to_group_id != 0:
-                sleep = random.randrange(self.min, self.max)
-                lock.acquire()
-                self.textfield.insert('end',
-                                      '{} - готовит приглашение в групу. Ждет {} секунд\n'.format(self.user[9], sleep))
-                self.textfield.see('end')
-                lock.release()
-                time.sleep(sleep)
-                self.inviteToGroup()
+                    # Перевіряємо чи не потрібно запрошувати в групу, якщо так, то виконуємо метод запрошення.
+                if self.invite_to_group_id != 0:
+                    sleep = random.randrange(self.min, self.max)
+                    self.wr_in_progress('готовит приглашение в групу', sleep)
+                    time.sleep(sleep)
+                    self.invite_to_group()
 
-    def inviteToFriend(self):
+
+    def invite_to_friend(self):
         # ------------Дивимось по якому принципу будемо додавати друзів  -------------#
         if self.suggested_type == 1:
-            lock.acquire()
-            no_friends_yet = self.getSuggestedFriends()
-            lock.release()
-            self.addNoFriendsYet(no_friends_yet)
+            no_friends_yet = self.find_suggested_friends()
+            self.add_no_friends_yet(no_friends_yet)
         else:
             bot_friend = set(self.user_friends[0]['items']) - set(bots_id)
             bot_friend = list(bot_friend)
             counts = 0
             while len(bot_friend) > counts:
-                lock.acquire()
-                data = get_candidate(session=self.user_friends[1], bot_friend=bot_friend[counts:counts + 5], max_friends=self.max_friends)
-                lock.release()
+                b_counts = len(bot_friend) if len(bot_friend) < counts + 5 else counts + 5
+                with lock:
+                    data = get_candidate(session=self.user_friends[1], bot_friend=bot_friend[counts:b_counts], max_friends=self.max_friends)
                 counts += 5
-                sleep = random.randrange(1, 5)
-
+                sleep = random.randrange(1, 6)
                 friend_profile = data[3]
                 friend_name = friend_profile[0]['first_name'].encode('utf8') + ' ' + friend_profile[0]['last_name'].encode('utf8')
-                lock.acquire()
-                self.textfield.insert('end', '{} - зашел к друзьям друга {}. Ждет {} секунд\n'.format(self.user[9],
-                                                                                                       friend_name,
-                                                                                                       sleep))
-                self.textfield.see('end')
-                lock.release()
+                self.wr_in_progress('зашел к друзьям друга {}'.format(friend_name), sleep)
                 time.sleep(sleep)
 
                 # Знаходимо людей яких у нас ще нема в друзях і вісіюємо тих кому вже відправляли запит, і тих хто у нас у спільних
                 profiles = data[0]
-                mutal_friends = data[1]
+                mutual_friends = data[1]
                 sended_request = data[2]
                 no_friends_yet = []
                 for i in profiles:
-                    if i['id'] not in mutal_friends:
+                    if i['id'] not in mutual_friends:
                         if i['id'] not in sended_request:
                             if i['id'] not in bots_id:
                                 no_friends_yet.append(i)
@@ -150,24 +131,19 @@ class BotLogic:
                     if t['id'] == self.user[6]: continue  # щоб сам себе не додавав (про всяк випадок)
                     candidates_in_friends.append(t['id'])
 
-                self.addNoFriendsYet(candidates_in_friends)
+                self.add_no_friends_yet(candidates_in_friends)
 
     # Метод додавання друзів
-    def addNoFriendsYet(self, no_friends_yet):
-        sleep = random.randrange(1, 5)
-        lock.acquire()
-        self.textfield.insert('end', '{} - нашел {} потенциальных друзей. Ждет {} секунд\n'.format(self.user[9],
-                                                                                                    len(no_friends_yet),
-                                                                                                    sleep))
-        self.textfield.see('end')
-        lock.release()
+    def add_no_friends_yet(self, no_friends_yet):
+        sleep = random.randrange(1, 6)
+        self.wr_in_progress('нашел {} потенциальных друзей'.format(len(no_friends_yet)), sleep)
         time.sleep(sleep)
         self.not_added = 0
         count = 0
         while count < len(no_friends_yet):
-            lock.acquire()
-            profiles = get_profiles(session=self.user_friends[1], batch=no_friends_yet[count:count + 24])
-            lock.release()
+            b_count = len(no_friends_yet) if count + 24 > len(no_friends_yet) else count + 24
+            with lock:
+                profiles = get_profiles(session=self.user_friends[1], batch=no_friends_yet[count:b_count])
             count += 24
             # Обєднуємо масиви в один для зручності
             for i in profiles[1]:
@@ -176,158 +152,141 @@ class BotLogic:
                         z[0].update(i)
             # Запускаємо цикл для першої пачки людей
             for no_friendID in profiles[0]:
-
+                # Видаляємо тих у кого більше друзів ніж у нас дозволено
+                if 'counters' in no_friendID[0]:
+                    if no_friendID[0]['counters']['friends'] >= self.max_friends:
+                        continue
+                    if no_friendID[0]['counters']['mutual_friends'] <= self.min_mutual:
+                        continue
                 # Перевіряємо чи не натиснута кнопка СТОП
-                if WORK == False:
+                if not WORK:
                     raise Exception('Stop')
 
                 if self.not_added == 20: break  # Логіка безперспективного додавання
 
                 # Перевіряємо чи нема не прочитаних повідомлень, якщо є, то відправляємо стандартне повідомлення.
                 if self.auto_answer == 1:
-                    self.autoAnswerOnMessage()
+                    self.answer_on_message()
 
                 # Перевіряємо чи не потрібно постити на стіну, якщо так, то виконуємо метод постингу.
                 if self.auto_post == 1:
-                    self.checkIfNeedCopy()
+                    self.check_if_need_copy_post()
 
                 # Перевіряємо чи не потрібно запрошувати в групу, якщо так, то виконуємо метод запрошення.
                 if self.invite_to_group_id != 0:
-                    self.inviteToGroup()
+                    self.invite_to_group()
 
                 # Перевіряємо чи не перебільшений ліміт на день
-                lock.acquire()
-                send_and_max_request = database.sendRequest(self.user[0])
-                lock.release()
+                with db_lock:
+                    send_and_max_request = database.sendRequest(self.user[0])
                 if send_and_max_request[1] == send_and_max_request[0]:
-                    lock.acquire()
-                    self.textfield.insert('end','{} - прекратил работу. Отправлено макс к-во запросов на день\n'.format(self.user[9]))
-                    self.textfield.see('end')
-                    lock.release()
+                    self.wr_in_progress('прекратил работу. Отправлено макс к-во запросов на день', 0)
                     raise Exception('Stop')
 
-                sleep = random.randrange(1, 5)
+                sleep = random.randrange(1, 7)
                 user_name = no_friendID[0]['first_name'].encode('utf8') + ' ' + no_friendID[0]['last_name'].encode('utf8')
-                lock.acquire()
-                self.textfield.insert('end', '{} - открыл профиль не друга {}. Ждет {} секунд\n'.format(self.user[9],
-                                                                                                         user_name,
-                                                                                                         sleep))
-                self.textfield.see('end')
-                lock.release()
+                self.wr_in_progress('открыл профиль не друга {}'.format(user_name), sleep)
                 time.sleep(sleep)
 
                 # Якщо сторінка друга видалена то vk вертає error. Тут його ловимо і виводимо
                 try:
-                    # Перевіряємо чи користувач активний (тобто заходив у ВК протягом останніх 2х тижнів)
-                    if time.time() - no_friendID[0]['last_seen']['time'] > 1210000:
-                        raise Exception('Пользователь не заходил > 2 недель')
-
+                    sleep = random.randrange(1, 6)
                     if 'counters' not in no_friendID[0]:
-                        raise Exception('Пользователь ограничел доступ к странице')
+                        self.wr_in_progress('не додал в друзья, причина: Пользователь ограничел доступ к странице', sleep)
+                        self.not_added += 1
+                        time.sleep(sleep)
+                        continue
 
-                    # Перевіряємо чи у користувача не більше друзів ніж дозволено у нас
+                    # Перевіряємо чи у користувача не більше друзів ніж дозволено у нас (треба видалити цю перевірку)
                     if no_friendID[0]['counters']['friends'] >= self.max_friends:
-                        raise Exception('У пользователя > {} друзей'.format(self.max_friends))
-
-                    # Перевіряємо чи користувач потрібної нам статі
-                    if no_friendID[0]['sex'] == self.friend_sex or self.friend_sex == 3:
-                        pass
-                    else:
-                        raise Exception('Пол пользователь не подходит')
+                        self.wr_in_progress('не додал в друзья, причина: У пользователя > {} друзей'.format(self.max_friends), sleep)
+                        self.not_added += 1
+                        time.sleep(sleep)
+                        continue
 
                     # Якщо спільних друзів більше ніж мінімально то йдемо далі.
-                    if no_friendID[0]['counters']['mutual_friends'] >= self.min_mutal:
+                    if no_friendID[0]['counters']['mutual_friends'] >= self.min_mutual:
                         # Перевіряємо чи нема ботів-сторінок в друзях. Якщо є, то не додаємо їх.
                         if [i for i in no_friendID[0]['common_friends'] if i in bots_id] != []:
+                            self.wr_in_progress('не додал в друзья, причина: найдено общего друга с ботом в списке', sleep)
                             self.not_added += 1
-                            raise Exception('найдено общего друга с ботом в списке')
+                            time.sleep(sleep)
+                            continue
+
                             # Додаємо в друзі або ловимо капчу (якщо буде завершуємо роботу цього бота)
                         try:
                             sleep = random.randrange(self.min, self.max)
-                            lock.acquire()
-                            # add_to_friend(session=self.user_friends[1], id=no_friendID[0]['id'])
-                            self.textfield.insert('end',
-                                                  '{} - отправил запрос в друзья юзеру {}. Ждет {} секунд\n'.format(
-                                                      self.user[9],
-                                                      user_name,
-                                                      sleep))
+                            with lock:
+                                add_to_friend(session=self.user_friends[1], id=no_friendID[0]['id'])
                             self.not_added = 0
-                            database.sendRequestCount(self.user[0])  # Додаємо в каунтер +1
-                            self.textfield.see('end')
-                            database.addToStatistics(self.user[9].decode('utf8'), 'friend')  # Додаємо в статистику
-                            lock.release()
+                            with db_lock:
+                                database.sendRequestCount(self.user[0])  # Додаємо в каунтер +1
+                                database.addToStatistics(self.user[9].decode('utf8'), 'friend')  # Додаємо в статистику
+                            self.wr_in_progress('отправил запрос в друзья -> {}'.format(user_name), sleep)
                             time.sleep(sleep)
 
                         except Exception as e:
+                            if e.code == 1:
+                                raise NameError('макс к-во заявок на день')
                             raise NameError('Нужно ввести капчу')
                     else:
-                        sleep = random.randrange(1, 5)
-                        lock.acquire()
-                        self.textfield.insert('end',
-                                              '{} - не нашел {} общих друзей с {}. Ждет {} секунд\n'.format(self.user[9],
-                                                                                                             self.min_mutal,
-                                                                                                             user_name,
-                                                                                                             sleep))
-                        self.textfield.see('end')
-                        lock.release()
+                        sleep = random.randrange(1, 6)
+                        self.wr_in_progress('не нашел {} общих друзей с {}'.format(self.min_mutual, user_name), sleep)
                         self.not_added += 1
                         time.sleep(sleep)
                 except Exception as e:
                     if e.__class__ == NameError:
-                        lock.acquire()
-                        self.textfield.insert('end',
-                                              '{} - прекратил работу, причина: {}\n'.format(self.user[9], e.message))
-                        self.textfield.see('end')
-                        lock.release()
+                        self.wr_in_progress('прекратил работу, причина: {}'.format(e.message), 0)
                         raise Exception
-                    lock.acquire()
-                    self.textfield.insert('end', '{} - не додал в друзья, причина: {}\n'.format(self.user[9], e.message))
-                    self.textfield.see('end')
-                    lock.release()
+                    self.wr_in_progress('не додал в друзья, причина: {}'.format(e.message), 0)
                     self.not_added += 1
 
     # Метод к-сті запросів за день, а також максимальної к-сті
-    def requestPerDay(self):
-        database.maxRequestSend(self.user[0])
-        day = datetime.strptime(self.user[7], '%Y-%m-%d').date()
-        if day != date.today():
-            database.updateUserRequest(self.user[0])
+    def request_per_day(self):
+        with db_lock:
+            database.maxRequestSend(self.user[0])
+            day = datetime.strptime(self.user[7], '%Y-%m-%d').date()
+            if day != date.today():
+                database.updateUserRequest(self.user[0])
 
     # Метод автоматичної відповіді на повідомлення та коментарі до фото
-    def autoAnswerOnMessage(self):
-        new_messages = get_messages(self.user_friends[1])
+    def answer_on_message(self):
+        with lock:
+            new_messages = get_messages(self.user_friends[1])
         if new_messages['count'] != 0:
             for i in new_messages['items']:
-                send_message(session=self.user_friends[1], f_id=i['message']['user_id'], message=self.message)
-                database.addToStatistics(self.user[9].decode('utf8'), 'message')  # Додаємо в статистику
+                with lock:
+                    send_message(session=self.user_friends[1], f_id=i['message']['user_id'], message=self.message)
+                with db_lock:
+                    database.addToStatistics(self.user[9].decode('utf8'), 'message')  # Додаємо в статистику
 
             sleep = random.randrange(self.min, self.max)
-            self.textfield.insert('end', '{} - ответил на сообщение. Ждет {} секунд\n'.format(self.user[9], sleep))
-            self.textfield.see('end')
+            self.wr_in_progress('ответил на сообщение', sleep)
             time.sleep(sleep)
 
         # Автоматична відповідь для коментарів під фото
         config = SafeConfigParser()
         config.read('config.ini')
         last_comment_data = config.getint('photo', 'auto_answer_on_comments')
-        new_comments = get_comments_on_photo(self.user_friends[1], last_comment_data)
+        with lock:
+            new_comments = get_comments_on_photo(self.user_friends[1], last_comment_data)
         if new_comments['count'] != 0:
             for i in new_comments['items']:
                 if i['date'] >= last_comment_data:
-                    send_message(session=self.user_friends[1], f_id=i['feedback']['from_id'], message=self.message)
-                    database.addToStatistics(self.user[9].decode('utf8'), 'message')  # Додаємо в статистику
+                    with lock:
+                        send_message(session=self.user_friends[1], f_id=i['feedback']['from_id'], message=self.message)
+                    with db_lock:
+                        database.addToStatistics(self.user[9].decode('utf8'), 'message')  # Додаємо в статистику
             config.set('photo', 'auto_answer_on_comments', str(int(time.time())))
             with open('config.ini', 'w') as f:
                 config.write(f)
 
             sleep = random.randrange(self.min, self.max)
-            self.textfield.insert('end', '{} - ответил на коментарий. Ждет {} секунд\n'.format(self.user[9], sleep))
-            self.textfield.see('end')
+            self.wr_in_progress('ответил на коментарий', sleep)
             time.sleep(sleep)
 
     # Мотод для копіювання постів
-    def checkIfNeedCopy(self):
-
+    def check_if_need_copy_post(self):
         config = SafeConfigParser()
         config.read('config.ini')
         post_date = config.getint('post', 'date')
@@ -346,10 +305,9 @@ class BotLogic:
                 owner_id = self.user[6]
             else:
                 owner_id = '-' + str(main_is_group)
-
-            post = get_last_post(self.user_friends[1], owner_id)
+            with lock:
+                post = get_last_post(self.user_friends[1], owner_id)
             if post['items'][0]['date'] > post_date:
-
                 attachments = ''
                 for p in post['items'][0]['attachments']:
                     attachments = attachments + 'photo' + str(p['photo']['owner_id']) + '_' + str(
@@ -361,36 +319,39 @@ class BotLogic:
                     config.write(f)
 
                 # Створюємо завдання в базі даних для інших ботів щоб вони зробили пости
-                con = db.connect(database="vkbot")
-                cur = con.cursor()
-                users = cur.execute("SELECT * FROM users WHERE start_work=1;").fetchall()
-                for u in users:
-                    if u[10] == 0:  # Щоб створити завдання всім крім основної сторінки
-                        cur.execute("INSERT INTO tasks (bot_id, text, attachments) VALUES (?, ?, ?)",
-                                    (u[0], post['items'][0]['text'], attachments))
-                        con.commit()
+                with db_lock:
+                    con = db.connect(database="vkbot")
+                    cur = con.cursor()
+                    users = cur.execute("SELECT * FROM users WHERE start_work=1;").fetchall()
+                    for u in users:
+                        if u[10] == 0:  # Щоб створити завдання всім крім основної сторінки
+                            cur.execute("INSERT INTO tasks (bot_id, text, attachments) VALUES (?, ?, ?)",
+                                        (u[0], post['items'][0]['text'], attachments))
+                            con.commit()
 
         if self.user[10] == 0:
-            con = db.connect(database="vkbot")
-            cur = con.cursor()
-            task_for_user = (cur.execute("SELECT * FROM tasks WHERE bot_id=?;", (self.user[0],))).fetchall()
-            for task in task_for_user:
-                post_on_wall(self.user_friends[1], task)
-                # Видаляємо завдання після посту, щоб бот потім знову це не запостив
-                cur.execute("DELETE FROM tasks WHERE id=?;", (task[0],))
-                con.commit()
-                database.addToStatistics(self.user[9].decode('utf8'), 'post')  # Додаємо в статистику
+            with db_lock:
+                con = db.connect(database="vkbot")
+                cur = con.cursor()
+                task_for_user = (cur.execute("SELECT * FROM tasks WHERE bot_id=?;", (self.user[0],))).fetchall()
+                for task in task_for_user:
+                    with lock:
+                        post_on_wall(self.user_friends[1], task)
+                    # Видаляємо завдання після посту, щоб бот потім знову це не запостив
+                    cur.execute("DELETE FROM tasks WHERE id=?;", (task[0],))
+                    con.commit()
+                    database.addToStatistics(self.user[9].decode('utf8'), 'post')  # Додаємо в статистику
 
     # Мотод для заливки фото
-    def uploadPhoto(self):
+    def upload_photo_in_album(self):
         # ----------Логіка--------------#
         # Беремо назву папки яку вибрав юзер, перевіряємо чи є такий альбом у сторінки
         # Якщо нема то створюємо новий альбом і заливаємо фото
 
         config = SafeConfigParser()
         config.read('config.ini')
-        dir = config.get('photo', 'upload_dir')
-        title = dir.rsplit('/')
+        directory = config.get('photo', 'upload_dir')
+        title = directory.rsplit('/')
         response = get_albums_title(login=self.user[1], password=self.user[2])
         session = response[0]
         albums_title = response[1]
@@ -402,32 +363,35 @@ class BotLogic:
                 album_id = t['id']
                 break
         if album_id == 0:
-            new_album = create_new_album(session, title[-1])
-            album_id = new_album['id']
+            with lock:
+                new_album = create_new_album(session, title[-1])
+                album_id = new_album['id']
 
-        upload_photo_to_album(session, album_id, dir, self.textfield, self.user)
+        upload_photo_to_album(session, album_id, directory, self.textfield, self.user)
 
-    def getSessionAndFriend(self):
+    def find_session_and_friend(self):
         # Отримуємо всіх друзів юзера (тянемо тільки ID). Також ловимо помилку про авторизацію і виводимо її
         try:
-            sleep = random.randrange(1, 5)
-            user_friends = get_friends_and_session(login=self.user[1], password=self.user[2])
-            # random.shuffle(user_friends[0]['items'])  # Перемішуємо друзів, щоб не проходитись завжди від початку списку
-            self.textfield.insert('end',
-                                  '{} - зашел к друзьям у него их {}. Ждет {} секунд\n'.format(self.user[9],
-                                                                                                str(user_friends[0][
-                                                                                                        'count']),
-                                                                                                sleep))
+            sleep = random.randrange(1, 6)
+            with lock:
+                user_friends = get_friends_and_session(login=self.user[1], password=self.user[2])
+                time.sleep(0.5)
+            random.shuffle(user_friends[0]['items'])  # Перемішуємо друзів, щоб не проходитись завжди від початку списку
+            self.wr_in_progress('зашел к друзьям у него их {}'.format(str(user_friends[0]['count'])), sleep)
             time.sleep(sleep)
-            self.textfield.see('end')
             return user_friends
-        except Exception as e:
-            self.textfield.insert('end', '{} - прекратил работу, причина : {}\n'.format(self.user[9], e.message))
-            self.textfield.see('end')
 
-    def getSuggestedFriends(self):
+        except Exception as e:
+            if 'Invalid URL' in e.message:
+                self.wr_in_progress('прекратил работу, причина : Проверте страницу', 0)
+            else:
+                self.wr_in_progress('прекратил работу, причина : {}'.format(e.message), 0)
+            raise Exception('Stop')
+
+    def find_suggested_friends(self):
         no_friends_yet = []
-        suggested = get_suggestions(session=self.user_friends[1])
+        with lock:
+            suggested = get_suggestions(session=self.user_friends[1])
         for us in suggested['items']:
             if us['id'] in bots_id: continue
             if time.time() - us['last_seen']['time'] > 1210000: continue
@@ -439,12 +403,13 @@ class BotLogic:
         return no_friends_yet
 
     # Метод для запрошень в групу
-    def inviteToGroup(self):
+    def invite_to_group(self):
         session = self.user_friends[1]
         group_id = self.invite_to_group_id
         if self.for_invite == []:
             friends = self.user_friends[0]['items'][:500]
-            self.for_invite = check_is_group_members(session, group_id, friends)
+            with lock:
+                self.for_invite = check_is_group_members(session, group_id, friends)
         for i in self.for_invite:
             if i['member'] == 0:
                 if 'invitation' in i:
@@ -458,20 +423,27 @@ class BotLogic:
                         continue
 
                     if e.code == 14:
-                        self.textfield.insert('end', '{} - прекратил работу, найдена капча\n'.format(self.user[9]))
-                        self.textfield.see('end')
+                        self.wr_in_progress('прекратил работу, найдена капча',0)
                         raise Exception('Stop')
 
                 sleep = random.randrange(self.min, self.max)
-                self.textfield.insert('end', '{} - пригласил друга в групу. Ждет {} секунд \n'.format(self.user[9],
-                                                                                                      sleep))
+                self.wr_in_progress('пригласил друга в групу', sleep)
                 time.sleep(sleep)
-                self.textfield.see('end')
-                database.addToStatistics(self.user[9].decode('utf8'), 'invite')  # Додаємо в статистику
+                with db_lock:
+                    database.addToStatistics(self.user[9].decode('utf8'), 'invite')  # Додаємо в статистику
                 self.for_invite.remove(i)
                 break
             else:
                 self.for_invite.remove(i)
+
+    def wr_in_progress(self, text, sleep):
+        with lock2:
+            if sleep == 0:
+                self.textfield.insert('end', '{} - {}.\n'.format(self.user[9], text))
+                self.textfield.see('end')
+            else:
+                self.textfield.insert('end', '{} - {}. Ждет {} секунд\n'.format(self.user[9], text, sleep))
+                self.textfield.see('end')
 
 
 # Цю зміннну потрібно щоб перевірити чи ботів сторінок нема у друзях.
