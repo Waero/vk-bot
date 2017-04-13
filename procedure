@@ -1,7 +1,7 @@
 Назва : execute.getCandidate
 Код:
 
-var profile = [Args.a,  Args.b,  Args.c, Args.d, Args.e];
+var profile = Args.a.split(",");
 var candidate = null;
 var count = 0;
 var max = Args.max;

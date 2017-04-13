@@ -84,7 +84,6 @@ class BotLogic:
                     time.sleep(sleep)
                     self.invite_to_group()
 
-
     def invite_to_friend(self):
         # ------------Дивимось по якому принципу будемо додавати друзів  -------------#
         if self.suggested_type == 1:
@@ -98,14 +97,14 @@ class BotLogic:
                 b_counts = len(bot_friend) if len(bot_friend) < counts + 5 else counts + 5
                 with lock:
                     data = get_candidate(session=self.user_friends[1], bot_friend=bot_friend[counts:b_counts], max_friends=self.max_friends)
-                counts += 5
+                counts += (bot_friend.index(data[3][0]['id']) + 1)
                 sleep = random.randrange(1, 6)
                 friend_profile = data[3]
                 friend_name = friend_profile[0]['first_name'].encode('utf8') + ' ' + friend_profile[0]['last_name'].encode('utf8')
                 self.wr_in_progress('зашел к друзьям друга {}'.format(friend_name), sleep)
                 time.sleep(sleep)
 
-                # Знаходимо людей яких у нас ще нема в друзях і вісіюємо тих кому вже відправляли запит, і тих хто у нас у спільних
+                # Знаходимо людей яких у нас ще нема в друзях і відсіюємо тих кому вже відправляли запит, і тих хто у нас у спільних
                 profiles = data[0]
                 mutual_friends = data[1]
                 sended_request = data[2]
